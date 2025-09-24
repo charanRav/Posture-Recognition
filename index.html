@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SpineGuard — Poster / Posture Monitor (Web)</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="light">
+  <header>
+    <h1>SpineGuard — Poster Recognition / Posture Monitor</h1>
+    <div class="controls">
+      <label class="toggle">
+        <input id="themeToggle" type="checkbox" />
+        <span class="slider"></span>
+      </label>
+      <span id="themeLabel">Light</span>
+      <button id="startBtn">Start</button>
+      <button id="stopBtn" disabled>Stop</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="video-wrap">
+      <video id="video" autoplay playsinline></video>
+      <canvas id="overlay"></canvas>
+    </div>
+
+    <aside class="panel">
+      <div class="status">
+        <div><strong>Posture:</strong> <span id="statusText">—</span></div>
+        <div><strong>Angle:</strong> <span id="angleText">—</span></div>
+        <div><strong>FPS:</strong> <span id="fpsText">—</span></div>
+      </div>
+
+      <div class="advice" id="advice">Advice will appear here.</div>
+
+      <details>
+        <summary>Advanced Tracking Options</summary>
+        <label>Trail length: <input id="trailLen" type="range" min="1" max="40" value="12"/></label>
+        <label>Line thickness: <input id="lineWidth" type="range" min="1" max="8" value="3"/></label>
+        <label>Glow strength: <input id="glow" type="range" min="0" max="40" value="12"/></label>
+      </details>
+
+      <p class="notes">
+        This is a browser-based upgrade of your Python/Mediapipe project. Uses <code>@mediapipe/pose</code> JS.
+      </p>
+    </aside>
+  </main>
+
+  <footer>
+    <p>Place this project on GitHub and enable Pages (serve from <code>main</code> or <code>gh-pages</code> branch).</p>
+  </footer>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>

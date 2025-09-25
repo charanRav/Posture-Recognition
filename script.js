@@ -1,86 +1,199 @@
-const videoElement = document.getElementById('video');
-const canvasElement = document.getElementById('output');
-const canvasCtx = canvasElement.getContext('2d');
+// SpineGuard — Posture Recognition (Frontend)
+const video = document.getElementById('video');
+const canvas = document.getElementById('overlay');
+const ctx = canvas.getContext('2d');
+
+const statusText = document.getElementById('statusText');
+const angleText = document.getElementById('angleText');
+const fpsText = document.getElementById('fpsText');
+const adviceEl = document.getElementById('advice');
 const startBtn = document.getElementById('startBtn');
-const zoomRange = document.getElementById('zoomRange');
-const zoomValue = document.getElementById('zoomValue');
+const stopBtn = document.getElementById('stopBtn');
 
-let currentZoom = 1;
+const trailLenInput = document.getElementById('trailLen');
+const lineWidthInput = document.getElementById('lineWidth');
+const glowInput = document.getElementById('glow');
+const zoomInput = document.getElementById('zoom');
+const videoWrap = document.getElementById('videoWrap');
 
-// Update zoom value display
-zoomRange.addEventListener('input', () => {
-  currentZoom = parseFloat(zoomRange.value);
-  zoomValue.textContent = currentZoom.toFixed(1) + "x";
-  videoElement.style.transform = `scale(${currentZoom})`;
-  canvasElement.style.transform = `scale(${currentZoom})`;
+let running = false;
+let lastTime = performance.now();
+let trail = [];
+
+// theme toggle
+const themeToggle = document.getElementById('themeToggle');
+const themeLabel = document.getElementById('themeLabel');
+themeToggle.addEventListener('change', e=>{
+  document.body.classList.toggle('dark', e.target.checked);
+  themeLabel.textContent = e.target.checked ? 'Dark' : 'Light';
 });
 
-// Setup Pose model
-const pose = new Pose.Pose({
-  locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
+// update zoom visually
+zoomInput.addEventListener('input', ()=>{
+  const z = zoomInput.value;
+  videoWrap.style.transform = `scale(${z})`;
 });
 
-pose.setOptions({
-  modelComplexity: 1,
-  smoothLandmarks: true,
-  enableSegmentation: false,
-  minDetectionConfidence: 0.5,
-  minTrackingConfidence: 0.5,
-});
-
-pose.onResults(onResults);
-
-// Handle results (draw futuristic lines)
-function onResults(results) {
-  canvasElement.width = videoElement.videoWidth;
-  canvasElement.height = videoElement.videoHeight;
-
-  canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-  canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
-
-  if (results.poseLandmarks) {
-    // Normal skeleton
-    drawConnectors(canvasCtx, results.poseLandmarks, Pose.POSE_CONNECTIONS, {
-      color: '#00e0ff',
-      lineWidth: 4
-    });
-    drawLandmarks(canvasCtx, results.poseLandmarks, { color: '#ff0055', radius: 4 });
-
-    // Extra futuristic overlays
-    canvasCtx.strokeStyle = "rgba(0, 255, 150, 0.7)";
-    canvasCtx.lineWidth = 2;
-    canvasCtx.beginPath();
-    results.poseLandmarks.forEach((lm, i) => {
-      const x = lm.x * canvasElement.width;
-      const y = lm.y * canvasElement.height;
-      if (i % 2 === 0) {
-        canvasCtx.lineTo(x, y);
-      }
-    });
-    canvasCtx.stroke();
-
-    // Circular overlay around head
-    const head = results.poseLandmarks[0];
-    if (head) {
-      const hx = head.x * canvasElement.width;
-      const hy = head.y * canvasElement.height;
-      canvasCtx.beginPath();
-      canvasCtx.arc(hx, hy, 40, 0, 2 * Math.PI);
-      canvasCtx.strokeStyle = "rgba(255, 0, 200, 0.6)";
-      canvasCtx.lineWidth = 3;
-      canvasCtx.stroke();
-    }
-  }
+// helpers
+function resizeCanvas() {
+  canvas.width = video.videoWidth || 640;
+  canvas.height = video.videoHeight || 480;
 }
 
-// Start webcam + pose
-startBtn.addEventListener('click', () => {
-  const camera = new Camera(videoElement, {
-    onFrame: async () => {
-      await pose.send({ image: videoElement });
-    },
-    width: 640,
-    height: 480,
+// posture logic
+const GOOD_THRESHOLD = 8;
+const MODERATE_THRESHOLD = 15;
+function midpoint(a,b){ return {x:(a.x+b.x)/2, y:(a.y+b.y)/2}; }
+function computeAngle(a,b){
+  const dx = b.x - a.x, dy = b.y - a.y;
+  return Math.atan2(dx,dy)*180/Math.PI;
+}
+function classifyPosture(angle){
+  const mag = Math.abs(angle);
+  if(mag <= GOOD_THRESHOLD) return 'GOOD';
+  if(mag <= MODERATE_THRESHOLD) return 'MODERATE';
+  return 'POOR';
+}
+function ergonomicAdvice(status){
+  if(status==='GOOD') return 'Maintain upright posture.';
+  if(status==='MODERATE') return 'Straighten your back a little.';
+  return 'Poor posture! Sit upright.';
+}
+
+// futuristic drawing
+function drawFuturisticLine(points, colorBase, width, glow){
+  if(points.length<2) return;
+  for(let layer=0;layer<3;layer++){
+    ctx.beginPath();
+    ctx.lineWidth = width*(1+(3-layer)*0.15);
+    ctx.lineCap='round';
+    ctx.moveTo(points[0].x, points[0].y);
+    for(let i=1;i<points.length;i++) ctx.lineTo(points[i].x, points[i].y);
+    const alpha=0.15+layer*0.15;
+    ctx.strokeStyle=`rgba(${colorBase.r},${colorBase.g},${colorBase.b},${alpha})`;
+    ctx.shadowColor=`rgba(${colorBase.r},${colorBase.g},${colorBase.b},${Math.min(0.9,glow/40)})`;
+    ctx.shadowBlur=glow*(0.7-layer*0.2);
+    ctx.stroke();
+  }
+  ctx.beginPath();
+  ctx.lineWidth=width;
+  ctx.moveTo(points[0].x, points[0].y);
+  for(let i=1;i<points.length;i++) ctx.lineTo(points[i].x, points[i].y);
+  ctx.shadowBlur=0;
+  ctx.strokeStyle='rgba(255,255,255,0.9)';
+  ctx.stroke();
+}
+
+// Mediapipe Pose
+let camera, pose;
+
+function setupPose(){
+  pose = new Pose({locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/${f}`});
+  pose.setOptions({
+    modelComplexity:1,
+    smoothLandmarks:true,
+    minDetectionConfidence:0.5,
+    minTrackingConfidence:0.5
   });
-  camera.start();
-});
+  pose.onResults(onResults);
+}
+
+async function start(){
+  if(running) return;
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+    video.srcObject=stream;
+    await video.play();
+    resizeCanvas();
+    camera=new Camera(video,{onFrame:async()=>{await pose.send({image:video});}});
+    camera.start();
+    running=true;
+    startBtn.disabled=true;
+    stopBtn.disabled=false;
+  }catch(err){ alert("Cannot access webcam: "+err.message); }
+}
+
+function stop(){
+  if(!running) return;
+  const tracks=video.srcObject?.getTracks()||[];
+  tracks.forEach(t=>t.stop());
+  video.srcObject=null;
+  running=false;
+  startBtn.disabled=false;
+  stopBtn.disabled=true;
+  clearCanvas();
+}
+
+startBtn.addEventListener('click', start);
+stopBtn.addEventListener('click', stop);
+
+function clearCanvas(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  statusText.textContent='—';
+  angleText.textContent='—';
+  fpsText.textContent='—';
+  adviceEl.textContent='Advice will appear here.';
+  trail=[];
+}
+
+function onResults(results){
+  const now=performance.now();
+  const dt=(now-lastTime)/1000;
+  const fps=Math.round(1/dt);
+  lastTime=now;
+  fpsText.textContent=fps;
+
+  resizeCanvas();
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  if(!results.poseLandmarks){
+    ctx.fillStyle='rgba(255,80,80,0.9)';
+    ctx.font='20px Arial';
+    ctx.fillText('No person detected',20,40);
+    return;
+  }
+
+  const lm=results.poseLandmarks;
+  const l_sh = lm[11], r_sh = lm[12], l_hp = lm[23], r_hp = lm[24];
+  const shoulderMid=midpoint(l_sh,r_sh);
+  const hipMid=midpoint(l_hp,r_hp);
+
+  const angle=computeAngle(shoulderMid,hipMid);
+  const status=classifyPosture(angle);
+  const advice=ergonomicAdvice(status);
+
+  statusText.textContent=status;
+  angleText.textContent=angle.toFixed(1)+"°";
+  adviceEl.textContent=advice;
+
+  function toPx(p){return {x:p.x*canvas.width,y:p.y*canvas.height};}
+  const sPx=toPx(shoulderMid), hPx=toPx(hipMid);
+  const lShPx=toPx(l_sh), rShPx=toPx(r_sh);
+  const lHpPx=toPx(l_hp), rHpPx=toPx(r_hp);
+
+  const interp=(a,b)=>{
+    const arr=[];for(let i=0;i<=20;i++){const t=i/20;arr.push({x:a.x*(1-t)+b.x*t,y:a.y*(1-t)+b.y*t});}
+    return arr;
+  };
+
+  const colors={GOOD:{r:16,g:185,b:129},MODERATE:{r:250,g:204,b:21},POOR:{r:239,g:68,b:68}};
+  const colorBase=colors[status];
+  const lineWidth=parseInt(lineWidthInput.value,10);
+  const glow=parseInt(glowInput.value,10);
+
+  // main shoulder-hip midline
+  drawFuturisticLine(interp(sPx,hPx),colorBase,lineWidth,glow);
+  // extra futuristic lines
+  drawFuturisticLine(interp(lShPx,rShPx),{r:120,g:220,b:255},lineWidth,glow);
+  drawFuturisticLine(interp(lHpPx,rHpPx),{r:255,g:120,b:200},lineWidth,glow);
+
+  ctx.beginPath();
+  ctx.fillStyle='white';
+  ctx.arc(sPx.x,sPx.y,6,0,Math.PI*2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(hPx.x,hPx.y,6,0,Math.PI*2);
+  ctx.fill();
+}
+
+setupPose();

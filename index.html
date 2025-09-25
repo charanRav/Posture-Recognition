@@ -1,57 +1,32 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SpineGuard — Posture Monitor (Web)</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Posture Recognition</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
-<body class="light">
-  <header>
-    <h1>SpineGuard — Posture Recognition / Monitor</h1>
-    <div class="controls">
-      <label class="toggle">
-        <input id="themeToggle" type="checkbox" />
-        <span class="slider"></span>
-      </label>
-      <span id="themeLabel">Light</span>
-      <button id="startBtn">Start</button>
-      <button id="stopBtn" disabled>Stop</button>
-    </div>
-  </header>
+<body>
+  <h1>Posture Recognition</h1>
+  <button id="startBtn">Start</button>
 
-  <main>
-    <div class="video-wrap">
-      <video id="video" autoplay playsinline></video>
-      <canvas id="overlay"></canvas>
-    </div>
+  <!-- Video + Canvas -->
+  <div class="video-container">
+    <video id="video" autoplay playsinline></video>
+    <canvas id="output"></canvas>
+  </div>
 
-    <aside class="panel">
-      <div class="status">
-        <div><strong>Posture:</strong> <span id="statusText">—</span></div>
-        <div><strong>Angle:</strong> <span id="angleText">—</span></div>
-        <div><strong>FPS:</strong> <span id="fpsText">—</span></div>
-      </div>
-      <div class="advice" id="advice">Advice will appear here.</div>
-      <details>
-        <summary>Advanced Tracking Options</summary>
-        <label>Trail length: <input id="trailLen" type="range" min="1" max="40" value="12"/></label>
-        <label>Line thickness: <input id="lineWidth" type="range" min="1" max="8" value="3"/></label>
-        <label>Glow strength: <input id="glow" type="range" min="0" max="40" value="12"/></label>
-      </details>
-    </aside>
-  </main>
+  <!-- Zoom Control -->
+  <div class="controls">
+    <label for="zoomRange">Zoom:</label>
+    <input type="range" id="zoomRange" min="0.5" max="3" step="0.1" value="1">
+    <span id="zoomValue">1x</span>
+  </div>
 
-  <footer>
-    <p>Enable GitHub Pages to view this live.</p>
-  </footer>
-
-  <!-- MediaPipe JS libs -->
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/pose.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js"></script>
-
-  <!-- Your script -->
-  <script type="module" src="script.js"></script>
+  <!-- Mediapipe -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
-

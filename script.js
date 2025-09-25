@@ -13,14 +13,11 @@ const stopBtn = document.getElementById('stopBtn');
 const trailLenInput = document.getElementById('trailLen');
 const lineWidthInput = document.getElementById('lineWidth');
 const glowInput = document.getElementById('glow');
-const zoomInput = document.getElementById('zoom');
-const videoWrap = document.getElementById('videoWrap');
 
 let running = false;
 let lastTime = performance.now();
 let trail = [];
 
-// theme toggle
 const themeToggle = document.getElementById('themeToggle');
 const themeLabel = document.getElementById('themeLabel');
 themeToggle.addEventListener('change', e=>{
@@ -28,13 +25,6 @@ themeToggle.addEventListener('change', e=>{
   themeLabel.textContent = e.target.checked ? 'Dark' : 'Light';
 });
 
-// update zoom visually
-zoomInput.addEventListener('input', ()=>{
-  const z = zoomInput.value;
-  videoWrap.style.transform = `scale(${z})`;
-});
-
-// helpers
 function resizeCanvas() {
   canvas.width = video.videoWidth || 640;
   canvas.height = video.videoHeight || 480;
@@ -154,10 +144,8 @@ function onResults(results){
   }
 
   const lm=results.poseLandmarks;
-  const l_sh = lm[11], r_sh = lm[12], l_hp = lm[23], r_hp = lm[24];
-  const shoulderMid=midpoint(l_sh,r_sh);
-  const hipMid=midpoint(l_hp,r_hp);
-
+  const shoulderMid=midpoint(lm[11],lm[12]);
+  const hipMid=midpoint(lm[23],lm[24]);
   const angle=computeAngle(shoulderMid,hipMid);
   const status=classifyPosture(angle);
   const advice=ergonomicAdvice(status);
@@ -168,24 +156,19 @@ function onResults(results){
 
   function toPx(p){return {x:p.x*canvas.width,y:p.y*canvas.height};}
   const sPx=toPx(shoulderMid), hPx=toPx(hipMid);
-  const lShPx=toPx(l_sh), rShPx=toPx(r_sh);
-  const lHpPx=toPx(l_hp), rHpPx=toPx(r_hp);
 
-  const interp=(a,b)=>{
-    const arr=[];for(let i=0;i<=20;i++){const t=i/20;arr.push({x:a.x*(1-t)+b.x*t,y:a.y*(1-t)+b.y*t});}
-    return arr;
-  };
+  const interp=[];
+  for(let i=0;i<=20;i++){
+    const t=i/20;
+    interp.push({x:sPx.x*(1-t)+hPx.x*t, y:sPx.y*(1-t)+hPx.y*t});
+  }
 
   const colors={GOOD:{r:16,g:185,b:129},MODERATE:{r:250,g:204,b:21},POOR:{r:239,g:68,b:68}};
   const colorBase=colors[status];
   const lineWidth=parseInt(lineWidthInput.value,10);
   const glow=parseInt(glowInput.value,10);
 
-  // main shoulder-hip midline
-  drawFuturisticLine(interp(sPx,hPx),colorBase,lineWidth,glow);
-  // extra futuristic lines
-  drawFuturisticLine(interp(lShPx,rShPx),{r:120,g:220,b:255},lineWidth,glow);
-  drawFuturisticLine(interp(lHpPx,rHpPx),{r:255,g:120,b:200},lineWidth,glow);
+  drawFuturisticLine(interp,colorBase,lineWidth,glow);
 
   ctx.beginPath();
   ctx.fillStyle='white';
@@ -195,5 +178,58 @@ function onResults(results){
   ctx.arc(hPx.x,hPx.y,6,0,Math.PI*2);
   ctx.fill();
 }
+
+// ---- Zoom & Pan Feature ----
+const zoomInput = document.getElementById('zoom');
+const videoWrap = document.getElementById('videoWrap');
+
+let zoom = parseFloat(zoomInput?.value || 1);
+let tx = 0, ty = 0;
+let isPanning = false;
+let panStart = { x:0, y:0, tx:0, ty:0 };
+
+function applyTransform() {
+  videoWrap.style.transform = `translate(${tx}px, ${ty}px) scale(${zoom})`;
+}
+function clampPan() {
+  const maxX = Math.max(0, (zoom - 1) * videoWrap.clientWidth / 2);
+  const maxY = Math.max(0, (zoom - 1) * videoWrap.clientHeight / 2);
+  tx = Math.max(-maxX, Math.min(maxX, tx));
+  ty = Math.max(-maxY, Math.min(maxY, ty));
+}
+
+if (zoomInput) {
+  zoomInput.addEventListener('input', (e) => {
+    zoom = parseFloat(e.target.value);
+    clampPan();
+    applyTransform();
+  });
+}
+
+videoWrap.addEventListener('pointerdown', (ev) => {
+  if (zoom <= 1) return;
+  isPanning = true;
+  videoWrap.classList.add('dragging');
+  panStart = { x: ev.clientX, y: ev.clientY, tx, ty };
+  videoWrap.setPointerCapture(ev.pointerId);
+});
+videoWrap.addEventListener('pointermove', (ev) => {
+  if (!isPanning) return;
+  const dx = ev.clientX - panStart.x;
+  const dy = ev.clientY - panStart.y;
+  tx = panStart.tx + dx;
+  ty = panStart.ty + dy;
+  clampPan();
+  applyTransform();
+});
+videoWrap.addEventListener('pointerup', (ev) => {
+  isPanning = false;
+  videoWrap.classList.remove('dragging');
+  try { videoWrap.releasePointerCapture(ev.pointerId); } catch {}
+});
+videoWrap.addEventListener('pointercancel', () => {
+  isPanning = false;
+  videoWrap.classList.remove('dragging');
+});
 
 setupPose();

@@ -1,57 +1,35 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SpineGuard — Posture Monitor (Web)</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Futuristic Pose Tracker</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Load TensorFlow.js and PoseNet -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.20.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/posenet"></script>
 </head>
-<body class="light">
-  <header>
-    <h1>SpineGuard — Posture Recognition / Monitor</h1>
-    <div class="controls">
-      <label class="toggle">
-        <input id="themeToggle" type="checkbox" />
-        <span class="slider"></span>
-      </label>
-      <span id="themeLabel">Light</span>
-      <button id="startBtn">Start</button>
-      <button id="stopBtn" disabled>Stop</button>
-    </div>
-  </header>
+<body>
+  <div class="container">
+    <h1 class="title">⚡ Futuristic Pose Tracker ⚡</h1>
 
-  <main>
-    <div class="video-wrap" id="videoWrap">
+    <!-- Camera & Canvas -->
+    <div class="camera-wrapper">
       <video id="video" autoplay playsinline></video>
-      <canvas id="overlay"></canvas>
+      <canvas id="canvas"></canvas>
     </div>
 
-    <aside class="panel">
-      <div class="status">
-        <div><strong>Posture:</strong> <span id="statusText">—</span></div>
-        <div><strong>Angle:</strong> <span id="angleText">—</span></div>
-        <div><strong>FPS:</strong> <span id="fpsText">—</span></div>
-      </div>
-      <div class="advice" id="advice">Advice will appear here.</div>
-      <details>
-        <summary>Advanced Tracking Options</summary>
-        <label>Trail length: <input id="trailLen" type="range" min="1" max="40" value="12"/></label>
-        <label>Line thickness: <input id="lineWidth" type="range" min="1" max="8" value="3"/></label>
-        <label>Glow strength: <input id="glow" type="range" min="0" max="40" value="12"/></label>
-        <label>Zoom: <input id="zoom" type="range" min="1" max="3" step="0.1" value="1"/></label>
-      </details>
-    </aside>
-  </main>
+    <!-- Controls -->
+    <div class="controls">
+      <button id="startStopBtn">▶ Start</button>
+      <button class="zoomBtn" data-zoom="0.5">🔍 0.5x</button>
+      <button class="zoomBtn" data-zoom="1">🔍 1x</button>
+      <button class="zoomBtn" data-zoom="2">🔍 2x</button>
+      <button id="toggleSkeleton">⚡ Skeleton On</button>
+      <button id="infoBtn">ℹ Info</button>
+    </div>
+  </div>
 
-  <footer>
-    <p>Enable GitHub Pages to view this live.</p>
-  </footer>
-
-  <!-- MediaPipe JS libs -->
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/pose.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js"></script>
-
-  <!-- Your script -->
-  <script type="module" src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>

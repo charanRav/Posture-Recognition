@@ -1,66 +1,113 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SpineGuard — Posture Recognition</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SpineGuard — NextGen Posture Monitor</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- MediaPipe libs -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/pose.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js"></script>
 </head>
-<body>
-  <header>
-    <h1>🌀 SpineGuard</h1>
+<body class="light">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">🦴</div>
+      <div>
+        <div class="title">SpineGuard</div>
+        <div class="subtitle">Next-Gen Posture Monitor</div>
+      </div>
+    </div>
+
     <div class="controls">
-      <label class="toggle">
-        <input type="checkbox" id="themeToggle" />
-        <span class="slider"></span>
-      </label>
-      <span id="themeLabel">Light</span>
-      <select id="zoomSelect">
-        <option value="1.0">1.0x</option>
-        <option value="0.5">0.5x</option>
-        <option value="2.0">2.0x</option>
-      </select>
-      <button id="startBtn">▶ Start</button>
-      <button id="stopBtn" disabled>⏹ Stop</button>
+      <div class="control-item">
+        <label class="toggle">
+          <input id="themeToggle" type="checkbox" />
+          <span class="slider"></span>
+        </label>
+        <span id="themeLabel">Light</span>
+      </div>
+
+      <div class="control-item">
+        <label for="zoomSlider" class="small">Zoom</label>
+        <input id="zoomSlider" type="range" min="0.5" max="3" step="0.1" value="1" />
+        <span id="zoomDisplay">1.0x</span>
+        <button id="resetZoom" title="Reset zoom">Reset</button>
+      </div>
+
+      <div class="control-item">
+        <button id="startBtn" class="primary">Start</button>
+        <button id="stopBtn" disabled class="muted">Stop</button>
+      </div>
     </div>
   </header>
 
-  <main>
-    <div class="video-wrap">
-      <video id="video" autoplay muted playsinline></video>
-      <canvas id="overlay"></canvas>
-    </div>
-
-    <div class="panel">
-      <h2>Status</h2>
-      <div class="status">
-        <div><strong>Posture:</strong> <span id="statusText">—</span></div>
-        <div><strong>Angle:</strong> <span id="angleText">—</span></div>
-        <div><strong>FPS:</strong> <span id="fpsText">—</span></div>
+  <main class="main">
+    <section class="monitor">
+      <div id="videoWrap" class="video-wrap" aria-hidden="false">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="overlay"></canvas>
+        <div class="center-hint">Click Start → Allow Camera</div>
       </div>
-      <div class="advice" id="advice">Advice will appear here.</div>
-      <div id="timer">🕒 Session: 0m 0s</div>
-      <div id="breakReminder">💡 Reminder: Stay active!</div>
-    </div>
+
+      <div class="floating status-panel" id="statusPanel">
+        <div class="status-row"><strong>Posture</strong> <span id="statusText">—</span></div>
+        <div class="status-row"><strong>Angle</strong> <span id="angleText">—</span></div>
+        <div class="status-row"><strong>FPS</strong> <span id="fpsText">—</span></div>
+        <div class="advice" id="advice">Advice will appear here.</div>
+        <div class="timer" id="sessionTimer">Session: 0m 0s</div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <h3>Advanced Options</h3>
+
+      <label>Trail length
+        <input id="trailLen" type="range" min="1" max="40" value="12" />
+      </label>
+
+      <label>Line thickness
+        <input id="lineWidth" type="range" min="1" max="10" value="3" />
+      </label>
+
+      <label>Glow
+        <input id="glow" type="range" min="0" max="40" value="12" />
+      </label>
+
+      <div class="spacer"></div>
+
+      <h4>Community</h4>
+      <nav class="tabs">
+        <button class="tab active" data-tab="blog">Blog</button>
+        <button class="tab" data-tab="qna">Q&A</button>
+      </nav>
+
+      <div id="blogPane" class="tabpane">
+        <h4>Why spine posture matters</h4>
+        <p>Good posture reduces back pain, improves breathing & focus. Small adjustments (screen height, chair support, micro-breaks) make a big difference.</p>
+      </div>
+
+      <div id="qnaPane" class="tabpane hidden">
+        <form id="qnaForm">
+          <input id="qnaInput" placeholder="Share a tip or ask a question (anonymous)" required />
+          <button type="submit" class="small">Post</button>
+        </form>
+        <ul id="qnaList" class="qna-list"></ul>
+        <button id="clearQna" class="small muted">Clear local Q&A</button>
+      </div>
+
+      <div class="spacer"></div>
+
+      <div class="help">
+        <strong>Tip:</strong> For true mobile camera zoom, test on a phone (hardware zoom supported on many Android devices).
+      </div>
+    </aside>
   </main>
 
-  <section id="blog">
-    <h2>📖 Importance of Spine Health</h2>
-    <p>Maintaining good posture prevents back pain, boosts energy, and improves focus. Simple tips: keep your screen at eye level, take breaks every 30 minutes, and stretch regularly.</p>
-  </section>
-
-  <section id="qna">
-    <h2>💬 Community Q&A</h2>
-    <form id="qnaForm">
-      <input type="text" id="qnaInput" placeholder="Share your tip or question..." required />
-      <button type="submit">Post</button>
-    </form>
-    <ul id="qnaList"></ul>
-  </section>
-
-  <footer>© 2025 SpineGuard | Designed with ⚡ Futuristic Care</footer>
+  <footer class="footer">
+    <div>© 2025 SpineGuard — built with ❤️ for healthy backs</div>
+    <div class="footer-right">v1.0</div>
+  </footer>
 
   <script src="script.js"></script>
 </body>

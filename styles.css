@@ -1,79 +1,173 @@
 :root {
-  --bg: #0b1220;
-  --fg: #e6eef6;
-  --accent: #0ea5e9;
-  --panel: #071327;
+    --bg-color: #0d0f1a;
+    --primary-glow: #0ea5e9;
+    --secondary-glow: #3b82f6;
+    --text-color: #e2e8f0;
+    --panel-bg: rgba(22, 29, 47, 0.7);
+    --border-color: rgba(60, 102, 192, 0.5);
 }
 
-* { box-sizing: border-box; }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
 body {
-  margin: 0;
-  font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
-  background: var(--bg);
-  color: var(--fg);
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+    font-family: 'Orbitron', sans-serif; /* A futuristic font */
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+    padding: 20px;
 }
 
-.container {
-  width: 90%;
-  max-width: 1000px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-}
-
-.title {
-  font-size: 20px;
-  text-align: center;
+.main-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--primary-glow);
+    text-shadow:
+        0 0 5px var(--primary-glow),
+        0 0 10px var(--primary-glow),
+        0 0 20px var(--secondary-glow),
+        0 0 40px var(--secondary-glow);
+    position: absolute;
+    top: 20px;
+    z-index: 10;
 }
 
 .camera-wrapper {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 16/9;
-  background: #111;
-  border-radius: 12px;
-  overflow: hidden;
+    position: relative;
+    width: 90vw;
+    max-width: 960px;
+    aspect-ratio: 16 / 9;
+    border-radius: 15px;
+    overflow: hidden;
+    border: 2px solid var(--border-color);
+    box-shadow: 0 0 20px rgba(14, 165, 233, 0.3);
 }
 
 video, canvas {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  object-fit: cover;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: translate(-50%, -50%) scale(1); /* Initial state for zoom */
+    transition: transform 0.3s ease-in-out;
 }
 
-.controls {
-  display: flex;
-  gap: 10px;
+video {
+    transform: translate(-50%, -50%) scale(1) scaleX(-1); /* Flipped horizontally */
 }
 
-button {
-  padding: 8px 14px;
-  border-radius: 8px;
-  border: none;
-  background: var(--accent);
-  color: #fff;
-  cursor: pointer;
-  font-weight: bold;
+canvas {
+     transform: translate(-50%, -50%) scale(1) scaleX(-1); /* Flipped to match video */
 }
 
-select {
-  padding: 6px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--accent);
-  background: var(--panel);
-  color: var(--fg);
+.controls-bar {
+    position: fixed;
+    bottom: 30px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background-color: var(--panel-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 10px 20px;
+    border-radius: 50px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+    z-index: 10;
 }
 
-.status, .advice {
-  width: 100%;
-  background: var(--panel);
-  padding: 12px;
-  border-radius: 8px;
+.controls-bar button {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    font-size: 1.2rem;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.controls-bar button:hover {
+    background-color: var(--primary-glow);
+    color: white;
+    box-shadow: 0 0 15px var(--primary-glow);
+    border-color: var(--primary-glow);
+}
+
+.controls-bar button.active {
+    background-color: var(--primary-glow);
+    color: white;
+    border-color: var(--primary-glow);
+}
+
+.control-group {
+    display: flex;
+    gap: 5px;
+    background: rgba(0,0,0,0.2);
+    padding: 5px;
+    border-radius: 30px;
+}
+
+.zoom-controls button {
+    width: 60px;
+    height: 40px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+/* Modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 100;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background-color: var(--panel-bg);
+    margin: 15% auto;
+    padding: 30px;
+    border: 1px solid var(--border-color);
+    width: 80%;
+    max-width: 500px;
+    border-radius: 15px;
+    text-align: center;
+    position: relative;
+}
+
+.close-btn {
+    color: #aaa;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close-btn:hover {
+    color: white;
 }

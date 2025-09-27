@@ -3,88 +3,55 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SpineGuard — NextGen Posture Monitor</title>
+  <title>SpineGuard — Posture Monitor (Web)</title>
   <link rel="stylesheet" href="styles.css" />
-  <!-- MediaPipe -->
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/pose.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js"></script>
 </head>
 <body class="light">
-  <header class="topbar">
-    <div class="brand">
-      <div class="logo">🦴</div>
-      <div>
-        <div class="title">SpineGuard</div>
-        <div class="subtitle">Next-Gen Posture Monitor</div>
-      </div>
-    </div>
+  <header>
+    <h1>SpineGuard — Posture Recognition / Monitor</h1>
     <div class="controls">
-      <div class="control-item">
-        <label class="toggle">
-          <input id="themeToggle" type="checkbox" />
-          <span class="slider"></span>
-        </label>
-        <span id="themeLabel">Light</span>
-      </div>
-      <div class="control-item">
-        <label for="zoomSlider" class="small">Zoom</label>
-        <input id="zoomSlider" type="range" min="0.5" max="3" step="0.1" value="1" />
-        <span id="zoomDisplay">1.0x</span>
-        <button id="resetZoom">Reset</button>
-      </div>
-      <div class="control-item">
-        <button id="startBtn" class="primary">Start</button>
-        <button id="stopBtn" disabled class="muted">Stop</button>
-      </div>
+      <label class="toggle">
+        <input id="themeToggle" type="checkbox" />
+        <span class="slider"></span>
+      </label>
+      <span id="themeLabel">Light</span>
+      <button id="startBtn">Start</button>
+      <button id="stopBtn" disabled>Stop</button>
     </div>
   </header>
 
-  <main class="main">
-    <section class="monitor">
-      <div id="videoWrap" class="video-wrap">
-        <video id="video" autoplay playsinline muted></video>
-        <canvas id="overlay"></canvas>
-        <div class="center-hint">Click Start & Allow Camera</div>
-      </div>
-      <div class="status-panel">
+  <main>
+    <div class="video-wrap" id="videoWrap">
+      <video id="video" autoplay playsinline></video>
+      <canvas id="overlay"></canvas>
+    </div>
+
+    <aside class="panel">
+      <div class="status">
         <div><strong>Posture:</strong> <span id="statusText">—</span></div>
         <div><strong>Angle:</strong> <span id="angleText">—</span></div>
         <div><strong>FPS:</strong> <span id="fpsText">—</span></div>
-        <div class="advice" id="advice">Advice will appear here.</div>
-        <div class="timer" id="sessionTimer">Session: 0m 0s</div>
       </div>
-    </section>
-
-    <aside class="panel">
-      <h3>Advanced Options</h3>
-      <label>Trail length <input id="trailLen" type="range" min="1" max="40" value="12" /></label>
-      <label>Line thickness <input id="lineWidth" type="range" min="1" max="10" value="3" /></label>
-      <label>Glow <input id="glow" type="range" min="0" max="40" value="12" /></label>
-
-      <h3>Community</h3>
-      <nav class="tabs">
-        <button class="tab active" data-tab="blog">Blog</button>
-        <button class="tab" data-tab="qna">Q&A</button>
-      </nav>
-      <div id="blogPane" class="tabpane">
-        <h4>Why spine posture matters</h4>
-        <p>Good posture reduces back pain, improves focus, and prevents long-term damage. Adjust your chair, screen height, and take micro-breaks!</p>
-      </div>
-      <div id="qnaPane" class="tabpane hidden">
-        <form id="qnaForm">
-          <input id="qnaInput" placeholder="Share a tip or ask (anonymous)" required />
-          <button type="submit">Post</button>
-        </form>
-        <ul id="qnaList" class="qna-list"></ul>
-        <button id="clearQna" class="muted">Clear Local Q&A</button>
-      </div>
+      <div class="advice" id="advice">Advice will appear here.</div>
+      <details>
+        <summary>Advanced Tracking Options</summary>
+        <label>Trail length: <input id="trailLen" type="range" min="1" max="40" value="12"/></label>
+        <label>Line thickness: <input id="lineWidth" type="range" min="1" max="8" value="3"/></label>
+        <label>Glow strength: <input id="glow" type="range" min="0" max="40" value="12"/></label>
+        <label>Zoom: <input id="zoom" type="range" min="1" max="3" step="0.1" value="1"/></label>
+      </details>
     </aside>
   </main>
 
-  <footer class="footer">
-    <div>© 2025 SpineGuard — Stay Healthy</div>
+  <footer>
+    <p>Enable GitHub Pages to view this live.</p>
   </footer>
 
-  <script src="script.js"></script>
+  <!-- MediaPipe JS libs -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/pose.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js"></script>
+
+  <!-- Your script -->
+  <script type="module" src="script.js"></script>
 </body>
 </html>

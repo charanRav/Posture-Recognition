@@ -1,235 +1,130 @@
-// SpineGuard — Posture Recognition (Frontend)
-const video = document.getElementById('video');
-const canvas = document.getElementById('overlay');
-const ctx = canvas.getContext('2d');
+let video = document.getElementById("video");
+let canvas = document.getElementById("canvas");
+let ctx = canvas.getContext("2d");
 
-const statusText = document.getElementById('statusText');
-const angleText = document.getElementById('angleText');
-const fpsText = document.getElementById('fpsText');
-const adviceEl = document.getElementById('advice');
-const startBtn = document.getElementById('startBtn');
-const stopBtn = document.getElementById('stopBtn');
+let net;
+let isCameraOn = false;
+let showSkeleton = true;
+let zoomLevel = 1;
 
-const trailLenInput = document.getElementById('trailLen');
-const lineWidthInput = document.getElementById('lineWidth');
-const glowInput = document.getElementById('glow');
+// Initialize PoseNet
+async function loadModel() {
+  net = await posenet.load();
+  console.log("PoseNet Loaded!");
+}
 
-let running = false;
-let lastTime = performance.now();
-let trail = [];
+// Start/Stop Camera
+async function toggleCamera() {
+  if (!isCameraOn) {
+    let stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = stream;
+    isCameraOn = true;
+    document.getElementById("startStopBtn").innerText = "⏹ Stop";
+    detectPose();
+  } else {
+    let tracks = video.srcObject.getTracks();
+    tracks.forEach(track => track.stop());
+    isCameraOn = false;
+    document.getElementById("startStopBtn").innerText = "▶ Start";
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+}
 
-const themeToggle = document.getElementById('themeToggle');
-const themeLabel = document.getElementById('themeLabel');
-themeToggle.addEventListener('change', e=>{
-  document.body.classList.toggle('dark', e.target.checked);
-  themeLabel.textContent = e.target.checked ? 'Dark' : 'Light';
+// Zoom Feature
+document.querySelectorAll(".zoomBtn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    zoomLevel = parseFloat(btn.dataset.zoom);
+  });
 });
 
-function resizeCanvas() {
-  canvas.width = video.videoWidth || 640;
-  canvas.height = video.videoHeight || 480;
+// Toggle Skeleton
+document.getElementById("toggleSkeleton").addEventListener("click", () => {
+  showSkeleton = !showSkeleton;
+  document.getElementById("toggleSkeleton").innerText = showSkeleton ? "⚡ Skeleton On" : "⚡ Skeleton Off";
+});
+
+// Info Button
+document.getElementById("infoBtn").addEventListener("click", () => {
+  alert("Futuristic Pose Tracker v2.0\n- Zoom Controls\n- Advanced Skeleton\n- Neon Futuristic Design");
+});
+
+// Pose Detection
+async function detectPose() {
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  setInterval(async () => {
+    if (!isCameraOn) return;
+    const pose = await net.estimateSinglePose(video, { flipHorizontal: true });
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Apply Zoom
+    ctx.save();
+    ctx.scale(zoomLevel, zoomLevel);
+    ctx.translate(
+      (canvas.width / zoomLevel - canvas.width) / 2,
+      (canvas.height / zoomLevel - canvas.height) / 2
+    );
+
+    // Draw Skeleton
+    if (showSkeleton) {
+      drawSkeleton(pose);
+    }
+
+    ctx.restore();
+  }, 100);
 }
 
-// posture logic
-const GOOD_THRESHOLD = 8;
-const MODERATE_THRESHOLD = 15;
-function midpoint(a,b){ return {x:(a.x+b.x)/2, y:(a.y+b.y)/2}; }
-function computeAngle(a,b){
-  const dx = b.x - a.x, dy = b.y - a.y;
-  return Math.atan2(dx,dy)*180/Math.PI;
-}
-function classifyPosture(angle){
-  const mag = Math.abs(angle);
-  if(mag <= GOOD_THRESHOLD) return 'GOOD';
-  if(mag <= MODERATE_THRESHOLD) return 'MODERATE';
-  return 'POOR';
-}
-function ergonomicAdvice(status){
-  if(status==='GOOD') return 'Maintain upright posture.';
-  if(status==='MODERATE') return 'Straighten your back a little.';
-  return 'Poor posture! Sit upright.';
-}
-
-// futuristic drawing
-function drawFuturisticLine(points, colorBase, width, glow){
-  if(points.length<2) return;
-  for(let layer=0;layer<3;layer++){
-    ctx.beginPath();
-    ctx.lineWidth = width*(1+(3-layer)*0.15);
-    ctx.lineCap='round';
-    ctx.moveTo(points[0].x, points[0].y);
-    for(let i=1;i<points.length;i++) ctx.lineTo(points[i].x, points[i].y);
-    const alpha=0.15+layer*0.15;
-    ctx.strokeStyle=`rgba(${colorBase.r},${colorBase.g},${colorBase.b},${alpha})`;
-    ctx.shadowColor=`rgba(${colorBase.r},${colorBase.g},${colorBase.b},${Math.min(0.9,glow/40)})`;
-    ctx.shadowBlur=glow*(0.7-layer*0.2);
-    ctx.stroke();
-  }
-  ctx.beginPath();
-  ctx.lineWidth=width;
-  ctx.moveTo(points[0].x, points[0].y);
-  for(let i=1;i<points.length;i++) ctx.lineTo(points[i].x, points[i].y);
-  ctx.shadowBlur=0;
-  ctx.strokeStyle='rgba(255,255,255,0.9)';
-  ctx.stroke();
-}
-
-// Mediapipe Pose
-let camera, pose;
-
-function setupPose(){
-  pose = new Pose({locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/${f}`});
-  pose.setOptions({
-    modelComplexity:1,
-    smoothLandmarks:true,
-    minDetectionConfidence:0.5,
-    minTrackingConfidence:0.5
+// Futuristic Skeleton Drawing
+function drawSkeleton(pose) {
+  pose.keypoints.forEach(kp => {
+    if (kp.score > 0.5) {
+      ctx.beginPath();
+      ctx.arc(kp.position.x, kp.position.y, 5, 0, 2 * Math.PI);
+      ctx.fillStyle = "#0ff";
+      ctx.fill();
+    }
   });
-  pose.onResults(onResults);
-}
 
-async function start(){
-  if(running) return;
-  try{
-    const stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
-    video.srcObject=stream;
-    await video.play();
-    resizeCanvas();
-    camera=new Camera(video,{onFrame:async()=>{await pose.send({image:video});}});
-    camera.start();
-    running=true;
-    startBtn.disabled=true;
-    stopBtn.disabled=false;
-  }catch(err){ alert("Cannot access webcam: "+err.message); }
-}
+  // Extra futuristic connections
+  let connections = [
+    ["leftShoulder", "rightShoulder"],
+    ["leftHip", "rightHip"],
+    ["leftShoulder", "leftElbow"],
+    ["rightShoulder", "rightElbow"],
+    ["leftElbow", "leftWrist"],
+    ["rightElbow", "rightWrist"],
+    ["leftHip", "leftKnee"],
+    ["rightHip", "rightKnee"],
+    ["leftKnee", "leftAnkle"],
+    ["rightKnee", "rightAnkle"],
+    ["leftShoulder", "leftHip"],
+    ["rightShoulder", "rightHip"],
+    // futuristic extras
+    ["leftWrist", "rightWrist"],
+    ["leftAnkle", "rightAnkle"],
+    ["nose", "leftWrist"],
+    ["nose", "rightWrist"],
+  ];
 
-function stop(){
-  if(!running) return;
-  const tracks=video.srcObject?.getTracks()||[];
-  tracks.forEach(t=>t.stop());
-  video.srcObject=null;
-  running=false;
-  startBtn.disabled=false;
-  stopBtn.disabled=true;
-  clearCanvas();
-}
+  connections.forEach(([p1, p2]) => {
+    let kp1 = pose.keypoints.find(k => k.part === p1);
+    let kp2 = pose.keypoints.find(k => k.part === p2);
 
-startBtn.addEventListener('click', start);
-stopBtn.addEventListener('click', stop);
-
-function clearCanvas(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  statusText.textContent='—';
-  angleText.textContent='—';
-  fpsText.textContent='—';
-  adviceEl.textContent='Advice will appear here.';
-  trail=[];
-}
-
-function onResults(results){
-  const now=performance.now();
-  const dt=(now-lastTime)/1000;
-  const fps=Math.round(1/dt);
-  lastTime=now;
-  fpsText.textContent=fps;
-
-  resizeCanvas();
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  if(!results.poseLandmarks){
-    ctx.fillStyle='rgba(255,80,80,0.9)';
-    ctx.font='20px Arial';
-    ctx.fillText('No person detected',20,40);
-    return;
-  }
-
-  const lm=results.poseLandmarks;
-  const shoulderMid=midpoint(lm[11],lm[12]);
-  const hipMid=midpoint(lm[23],lm[24]);
-  const angle=computeAngle(shoulderMid,hipMid);
-  const status=classifyPosture(angle);
-  const advice=ergonomicAdvice(status);
-
-  statusText.textContent=status;
-  angleText.textContent=angle.toFixed(1)+"°";
-  adviceEl.textContent=advice;
-
-  function toPx(p){return {x:p.x*canvas.width,y:p.y*canvas.height};}
-  const sPx=toPx(shoulderMid), hPx=toPx(hipMid);
-
-  const interp=[];
-  for(let i=0;i<=20;i++){
-    const t=i/20;
-    interp.push({x:sPx.x*(1-t)+hPx.x*t, y:sPx.y*(1-t)+hPx.y*t});
-  }
-
-  const colors={GOOD:{r:16,g:185,b:129},MODERATE:{r:250,g:204,b:21},POOR:{r:239,g:68,b:68}};
-  const colorBase=colors[status];
-  const lineWidth=parseInt(lineWidthInput.value,10);
-  const glow=parseInt(glowInput.value,10);
-
-  drawFuturisticLine(interp,colorBase,lineWidth,glow);
-
-  ctx.beginPath();
-  ctx.fillStyle='white';
-  ctx.arc(sPx.x,sPx.y,6,0,Math.PI*2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(hPx.x,hPx.y,6,0,Math.PI*2);
-  ctx.fill();
-}
-
-// ---- Zoom & Pan Feature ----
-const zoomInput = document.getElementById('zoom');
-const videoWrap = document.getElementById('videoWrap');
-
-let zoom = parseFloat(zoomInput?.value || 1);
-let tx = 0, ty = 0;
-let isPanning = false;
-let panStart = { x:0, y:0, tx:0, ty:0 };
-
-function applyTransform() {
-  videoWrap.style.transform = `translate(${tx}px, ${ty}px) scale(${zoom})`;
-}
-function clampPan() {
-  const maxX = Math.max(0, (zoom - 1) * videoWrap.clientWidth / 2);
-  const maxY = Math.max(0, (zoom - 1) * videoWrap.clientHeight / 2);
-  tx = Math.max(-maxX, Math.min(maxX, tx));
-  ty = Math.max(-maxY, Math.min(maxY, ty));
-}
-
-if (zoomInput) {
-  zoomInput.addEventListener('input', (e) => {
-    zoom = parseFloat(e.target.value);
-    clampPan();
-    applyTransform();
+    if (kp1 && kp2 && kp1.score > 0.5 && kp2.score > 0.5) {
+      ctx.beginPath();
+      ctx.moveTo(kp1.position.x, kp1.position.y);
+      ctx.lineTo(kp2.position.x, kp2.position.y);
+      ctx.strokeStyle = "#0ff";
+      ctx.lineWidth = 2;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = "#0ff";
+      ctx.stroke();
+    }
   });
 }
 
-videoWrap.addEventListener('pointerdown', (ev) => {
-  if (zoom <= 1) return;
-  isPanning = true;
-  videoWrap.classList.add('dragging');
-  panStart = { x: ev.clientX, y: ev.clientY, tx, ty };
-  videoWrap.setPointerCapture(ev.pointerId);
-});
-videoWrap.addEventListener('pointermove', (ev) => {
-  if (!isPanning) return;
-  const dx = ev.clientX - panStart.x;
-  const dy = ev.clientY - panStart.y;
-  tx = panStart.tx + dx;
-  ty = panStart.ty + dy;
-  clampPan();
-  applyTransform();
-});
-videoWrap.addEventListener('pointerup', (ev) => {
-  isPanning = false;
-  videoWrap.classList.remove('dragging');
-  try { videoWrap.releasePointerCapture(ev.pointerId); } catch {}
-});
-videoWrap.addEventListener('pointercancel', () => {
-  isPanning = false;
-  videoWrap.classList.remove('dragging');
-});
-
-setupPose();
+// Init
+document.getElementById("startStopBtn").addEventListener("click", toggleCamera);
+loadModel();

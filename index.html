@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Futuristic Pose Tracker</title>
-  <link rel="stylesheet" href="style.css">
-  <!-- Load TensorFlow.js and PoseNet -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.20.0"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>⚡ Futuristic Pose Tracker</title>
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- TensorFlow.js & PoseNet -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.20.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/posenet"></script>
 </head>
 <body>
   <div class="container">
-    <h1 class="title">⚡ Futuristic Pose Tracker ⚡</h1>
+    <h1 class="title">⚡ Futuristic Pose Tracker</h1>
 
     <!-- Camera & Canvas -->
     <div class="camera-wrapper">
@@ -21,13 +22,23 @@
 
     <!-- Controls -->
     <div class="controls">
-      <button id="startStopBtn">▶ Start</button>
-      <button class="zoomBtn" data-zoom="0.5">🔍 0.5x</button>
-      <button class="zoomBtn" data-zoom="1">🔍 1x</button>
-      <button class="zoomBtn" data-zoom="2">🔍 2x</button>
-      <button id="toggleSkeleton">⚡ Skeleton On</button>
-      <button id="infoBtn">ℹ Info</button>
+      <button id="startBtn">Start</button>
+      <button id="stopBtn" disabled>Stop</button>
+      <select id="zoomSelect">
+        <option value="0.5">0.5x</option>
+        <option value="1" selected>1x</option>
+        <option value="2">2x</option>
+      </select>
     </div>
+
+    <!-- Status -->
+    <div class="status">
+      <p><strong>Posture:</strong> <span id="statusText">—</span></p>
+      <p><strong>Angle:</strong> <span id="angleText">—</span></p>
+      <p><strong>FPS:</strong> <span id="fpsText">—</span></p>
+    </div>
+
+    <div class="advice" id="advice">Advice will appear here.</div>
   </div>
 
   <script src="script.js"></script>

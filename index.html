@@ -1,114 +1,63 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SpineGuard — Posture Monitor (Web)</title>
-  <link rel="stylesheet" href="styles.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SpineGuard — Posture Monitor</title>
+<link rel="stylesheet" href="styles.css">
+
+<!-- MediaPipe Pose and Camera utilities -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/pose.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js"></script>
 </head>
 <body class="light">
-  <header>
-    <div class="brand">
-      <h1>SpineGuard</h1>
-      <p class="tag">Posture Monitor — Sleek · Reliable · Private (browser-only)</p>
+
+<header>
+  <div class="brand">
+    <h1>SpineGuard</h1>
+    <p>Posture Monitor — Browser Only</p>
+  </div>
+
+  <div class="controls">
+    <button id="startBtn">Start</button>
+    <button id="stopBtn" disabled>Stop</button>
+  </div>
+</header>
+
+<main>
+  <section class="video-section">
+    <div class="video-wrap" id="videoWrap">
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="overlay"></canvas>
     </div>
+    <div class="status" id="status">Press Start</div>
+  </section>
 
-    <div class="header-actions">
-      <div class="zoom-levels">
-        <button class="zoom-btn" data-zoom="0.5">0.5x</button>
-        <button class="zoom-btn active" data-zoom="1">1x</button>
-        <button class="zoom-btn" data-zoom="2">2x</button>
+  <aside class="panel">
+    <div class="panel-section tabs">
+      <div class="tab-buttons">
+        <button class="tab-btn active" data-tab="blog">Blog</button>
+        <button class="tab-btn" data-tab="qa">Q&A</button>
       </div>
 
-      <div class="theme-and-controls">
-        <label class="toggle">
-          <input id="themeToggle" type="checkbox" />
-          <span class="slider"></span>
-        </label>
-        <span id="themeLabel">Light</span>
+      <div class="tab-content" id="blog">
+        <h4>Latest Post</h4>
+        <p><strong>Why posture matters</strong><br>Keep your head aligned with your spine. Maintain good habits.</p>
+      </div>
 
-        <button id="startBtn" class="primary">Start</button>
-        <button id="stopBtn" disabled>Stop</button>
+      <div class="tab-content hidden" id="qa">
+        <h4>Q & A</h4>
+        <div class="qa-item"><strong>Q:</strong> Does this run offline?<br><strong>A:</strong> Yes — browser only.</div>
+        <div class="qa-item"><strong>Q:</strong> Can I adjust thresholds?<br><strong>A:</strong> Yes — in the JS code.</div>
       </div>
     </div>
-  </header>
+  </aside>
+</main>
 
-  <main>
-    <section class="left">
-      <div class="video-wrap" id="videoWrap" aria-label="video container">
-        <video id="video" autoplay playsinline muted></video>
-        <canvas id="overlay"></canvas>
-      </div>
+<footer>
+  SpineGuard — fully client-side posture monitor.
+</footer>
 
-      <div class="controls-row">
-        <label>Zoom: <input id="zoom" type="range" min="0.5" max="2" step="0.1" value="1"/></label>
-        <label>Trail: <input id="trailLen" type="range" min="1" max="40" value="12"/></label>
-        <label>Line width: <input id="lineWidth" type="range" min="1" max="8" value="3"/></label>
-        <label>FPS: <span id="fpsText">—</span></label>
-      </div>
-
-      <div class="advice-compact">
-        <strong>Posture:</strong> <span id="statusText">—</span>
-        &nbsp;|&nbsp;
-        <strong>Angle:</strong> <span id="angleText">—</span>
-      </div>
-    </section>
-
-    <aside class="panel">
-      <div class="panel-section">
-        <h3>Tracking Status</h3>
-        <div class="status-list">
-          <div><strong>Posture:</strong> <span id="statusTextPanel">—</span></div>
-          <div><strong>Angle:</strong> <span id="angleTextPanel">—</span></div>
-          <div><strong>FPS:</strong> <span id="fpsTextPanel">—</span></div>
-          <div><strong>Zoom:</strong> <span id="zoomLabel">1x</span></div>
-        </div>
-      </div>
-
-      <div class="panel-section">
-        <h3>Interpretation</h3>
-        <div id="advice">Advice appears here — keep your spine straight, shoulders relaxed.</div>
-      </div>
-
-      <div class="panel-section small">
-        <summary>Advanced</summary>
-        <label>Line thickness: <input id="lineWidthPanel" type="range" min="1" max="8" value="3"/></label>
-        <label>Trail length: <input id="trailLenPanel" type="range" min="1" max="40" value="12"/></label>
-      </div>
-
-      <div class="panel-section tabs">
-        <div class="tab-buttons">
-          <button class="tab-btn active" data-tab="blog">Blog</button>
-          <button class="tab-btn" data-tab="qa">Q&A</button>
-          <button class="tab-btn" data-tab="about">About</button>
-        </div>
-
-        <div class="tab-content" id="blog">
-          <h4>Latest Post</h4>
-          <p><strong>Why posture matters</strong><br/>Short article snippet — keep your head aligned with your spine.</p>
-          <a href="#" class="readmore">Edit blog content in index.html</a>
-        </div>
-
-        <div class="tab-content hidden" id="qa">
-          <h4>Q &amp; A</h4>
-          <div class="qa-item"><strong>Q:</strong> Does this data leave the browser?<br/><strong>A:</strong> No — everything runs locally.</div>
-          <div class="qa-item"><strong>Q:</strong> Can I change thresholds?<br/><strong>A:</strong> Yes — edit thresholds in script.js.</div>
-        </div>
-
-        <div class="tab-content hidden" id="about">
-          <h4>About SpineGuard</h4>
-          <p>Designed for easy customization. No backend required. Uses MediaPipe Pose for landmark detection.</p>
-        </div>
-      </div>
-    </aside>
-  </main>
-
-  <footer>
-    <p>SpineGuard — client-only posture monitor. Replace content in /blog or /qa in index.html to update text.</p>
-  </footer>
-
-  <!-- Load script as module -->
-  <script type="module" src="script.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
-

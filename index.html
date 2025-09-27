@@ -1,75 +1,58 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Posture Pro - AI Posture Coach</title>
-    <link rel="stylesheet" href="styles.css" />
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/posenet@2.2.2/dist/posenet.min.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SpineGuard — Posture Monitor (Web)</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
-<body data-theme="light">
-    <div id="loader" class="loader">
-        <div class="spinner"></div>
-        <p>Initializing AI Coach...</p>
+<body class="light">
+  <header>
+    <h1>SpineGuard — Posture Recognition / Monitor</h1>
+    <div class="controls">
+      <label class="toggle">
+        <input id="themeToggle" type="checkbox" />
+        <span class="slider"></span>
+      </label>
+      <span id="themeLabel">Light</span>
+      <button id="startBtn">Start</button>
+      <button id="stopBtn" disabled>Stop</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="video-wrap" id="videoWrap">
+      <video id="video" autoplay playsinline></video>
+      <canvas id="overlay"></canvas>
     </div>
 
-    <div class="top-bar">
-        <h1 class="main-title">Posture Pro</h1>
-        <button id="themeToggleBtn" class="icon-btn" title="Toggle Theme">
-            <svg id="themeIcon" viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 3a9 9 0 0 0 9 9c0 .46-.04.92-.1 1.36a5.5 5.5 0 0 1-9.76-4.86A9 9 0 0 0 12 3z"></path></svg>
-        </button>
-    </div>
+    <aside class="panel">
+      <div class="status">
+        <div><strong>Posture:</strong> <span id="statusText">—</span></div>
+        <div><strong>Angle:</strong> <span id="angleText">—</span></div>
+        <div><strong>FPS:</strong> <span id="fpsText">—</span></div>
+      </div>
+      <div class="advice" id="advice">Advice will appear here.</div>
+      <details>
+        <summary>Advanced Tracking Options</summary>
+        <label>Trail length: <input id="trailLen" type="range" min="1" max="40" value="12"/></label>
+        <label>Line thickness: <input id="lineWidth" type="range" min="1" max="8" value="3"/></label>
+        <label>Glow strength: <input id="glow" type="range" min="0" max="40" value="12"/></label>
+        <label>Zoom: <input id="zoom" type="range" min="1" max="3" step="0.1" value="1"/></label>
+      </details>
+    </aside>
+  </main>
 
-    <div class="camera-wrapper">
-        <video id="video" autoplay playsinline muted></video>
-        <canvas id="canvas"></canvas>
-        <div id="status-overlay" class="status-overlay">
-            <h2 id="statusText">Awaiting Calibration</h2>
-            <div id="score-container" class="score-container">
-                <p>Score: <span id="scoreText">--</span></p>
-            </div>
-        </div>
-    </div>
+  <footer>
+    <p>Enable GitHub Pages to view this live.</p>
+  </footer>
 
-    <div class="controls-bar">
-        <button id="startStopBtn" class="icon-btn" title="Start Camera" disabled>
-            <svg id="startStopIcon" viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M8 5v14l11-7z"></path></svg>
-        </button>
-        <button id="calibrateBtn" class="icon-btn" title="Calibrate Good Posture" disabled>
-            <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"></path></svg>
-        </button>
-        <button id="skeletonToggleBtn" class="icon-btn active" title="Toggle Skeleton" disabled>
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path><circle cx="12" cy="12" r="3"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle><circle cx="5" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg>
-        </button>
-        <button id="audioToggleBtn" class="icon-btn" title="Mute Alerts">
-             <svg id="audioIcon" viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"></path></svg>
-        </button>
-        <button id="infoBtn" class="icon-btn" title="Posture Health Tips">
-            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"></path></svg>
-        </button>
-    </div>
-    
-    <audio id="alertSound" src="alert.mp3" preload="auto"></audio>
-    <div id="infoModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn">&times;</span>
-            <h2>The Importance of Spine Health</h2>
-            <p class="intro">Your spine is your body's central support structure. Maintaining correct posture is critical for long-term health, energy levels, and preventing chronic pain.</p>
-            <h3>Common Problems from Poor Posture</h3>
-            <ul>
-                <li><strong>Chronic Back, Neck, and Shoulder Pain:</strong> Constant strain on muscles and ligaments leads to inflammation and pain. (Source: Journal of Physical Therapy Science)</li>
-                <li><strong>Headaches and Jaw Pain:</strong> Forward head posture strains neck muscles, often triggering tension headaches and temporomandibular joint (TMJ) pain.</li>
-                <li><strong>Reduced Lung Capacity:</strong> Slouching compresses your chest cavity, making it harder for your lungs to expand fully, which can reduce oxygen intake.</li>
-            </ul>
-            <h3>Actionable Tips for Better Posture</h3>
-            <ol>
-                <li><strong>The 90-90-90 Rule for Desks:</strong> Adjust your chair so your elbows, hips, and knees are at roughly 90-degree angles. Your computer screen should be at eye level.</li>
-                <li><strong>The 30-Minute Movement Rule:</strong> For every 30 minutes of sitting, get up and move for 2-3 minutes to improve circulation and reduce muscle stiffness.</li>
-                <li><strong>Strengthen Your Core:</strong> Exercises like planks and bird-dog are scientifically proven to improve spinal stability, providing a natural brace for your back.</li>
-                <li><strong>Practice Mindful Awareness:</strong> Actively think about your posture. Gently pull your shoulder blades back and down, imagining a string pulling your head towards the ceiling.</li>
-            </ol>
-        </div>
-    </div>
-    <script src="script.js"></script>
+  <!-- MediaPipe JS libs -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/pose.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js"></script>
+
+  <!-- Your script -->
+  <script type="module" src="script.js"></script>
 </body>
 </html>
+

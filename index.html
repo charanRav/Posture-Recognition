@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>SpineGuard — NextGen Posture Monitor</title>
   <link rel="stylesheet" href="styles.css" />
-  <!-- MediaPipe libs -->
+  <!-- MediaPipe -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/pose.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js"></script>
 </head>
@@ -18,7 +18,6 @@
         <div class="subtitle">Next-Gen Posture Monitor</div>
       </div>
     </div>
-
     <div class="controls">
       <div class="control-item">
         <label class="toggle">
@@ -27,14 +26,12 @@
         </label>
         <span id="themeLabel">Light</span>
       </div>
-
       <div class="control-item">
         <label for="zoomSlider" class="small">Zoom</label>
         <input id="zoomSlider" type="range" min="0.5" max="3" step="0.1" value="1" />
         <span id="zoomDisplay">1.0x</span>
-        <button id="resetZoom" title="Reset zoom">Reset</button>
+        <button id="resetZoom">Reset</button>
       </div>
-
       <div class="control-item">
         <button id="startBtn" class="primary">Start</button>
         <button id="stopBtn" disabled class="muted">Stop</button>
@@ -44,16 +41,15 @@
 
   <main class="main">
     <section class="monitor">
-      <div id="videoWrap" class="video-wrap" aria-hidden="false">
+      <div id="videoWrap" class="video-wrap">
         <video id="video" autoplay playsinline muted></video>
         <canvas id="overlay"></canvas>
-        <div class="center-hint">Click Start → Allow Camera</div>
+        <div class="center-hint">Click Start & Allow Camera</div>
       </div>
-
-      <div class="floating status-panel" id="statusPanel">
-        <div class="status-row"><strong>Posture</strong> <span id="statusText">—</span></div>
-        <div class="status-row"><strong>Angle</strong> <span id="angleText">—</span></div>
-        <div class="status-row"><strong>FPS</strong> <span id="fpsText">—</span></div>
+      <div class="status-panel">
+        <div><strong>Posture:</strong> <span id="statusText">—</span></div>
+        <div><strong>Angle:</strong> <span id="angleText">—</span></div>
+        <div><strong>FPS:</strong> <span id="fpsText">—</span></div>
         <div class="advice" id="advice">Advice will appear here.</div>
         <div class="timer" id="sessionTimer">Session: 0m 0s</div>
       </div>
@@ -61,52 +57,32 @@
 
     <aside class="panel">
       <h3>Advanced Options</h3>
+      <label>Trail length <input id="trailLen" type="range" min="1" max="40" value="12" /></label>
+      <label>Line thickness <input id="lineWidth" type="range" min="1" max="10" value="3" /></label>
+      <label>Glow <input id="glow" type="range" min="0" max="40" value="12" /></label>
 
-      <label>Trail length
-        <input id="trailLen" type="range" min="1" max="40" value="12" />
-      </label>
-
-      <label>Line thickness
-        <input id="lineWidth" type="range" min="1" max="10" value="3" />
-      </label>
-
-      <label>Glow
-        <input id="glow" type="range" min="0" max="40" value="12" />
-      </label>
-
-      <div class="spacer"></div>
-
-      <h4>Community</h4>
+      <h3>Community</h3>
       <nav class="tabs">
         <button class="tab active" data-tab="blog">Blog</button>
         <button class="tab" data-tab="qna">Q&A</button>
       </nav>
-
       <div id="blogPane" class="tabpane">
         <h4>Why spine posture matters</h4>
-        <p>Good posture reduces back pain, improves breathing & focus. Small adjustments (screen height, chair support, micro-breaks) make a big difference.</p>
+        <p>Good posture reduces back pain, improves focus, and prevents long-term damage. Adjust your chair, screen height, and take micro-breaks!</p>
       </div>
-
       <div id="qnaPane" class="tabpane hidden">
         <form id="qnaForm">
-          <input id="qnaInput" placeholder="Share a tip or ask a question (anonymous)" required />
-          <button type="submit" class="small">Post</button>
+          <input id="qnaInput" placeholder="Share a tip or ask (anonymous)" required />
+          <button type="submit">Post</button>
         </form>
         <ul id="qnaList" class="qna-list"></ul>
-        <button id="clearQna" class="small muted">Clear local Q&A</button>
-      </div>
-
-      <div class="spacer"></div>
-
-      <div class="help">
-        <strong>Tip:</strong> For true mobile camera zoom, test on a phone (hardware zoom supported on many Android devices).
+        <button id="clearQna" class="muted">Clear Local Q&A</button>
       </div>
     </aside>
   </main>
 
   <footer class="footer">
-    <div>© 2025 SpineGuard — built with ❤️ for healthy backs</div>
-    <div class="footer-right">v1.0</div>
+    <div>© 2025 SpineGuard — Stay Healthy</div>
   </footer>
 
   <script src="script.js"></script>

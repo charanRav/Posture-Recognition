@@ -1,42 +1,57 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
 
 :root {
-    --bg-gradient-start: #e0eafc;
-    --bg-gradient-end: #cfdef3;
-    --primary-color: #3a7bd5;
-    --secondary-color: #00d2ff;
-    --text-color: #2c3e50;
-    --panel-bg: rgba(255, 255, 255, 0.8);
-    --shadow-color: rgba(0, 0, 0, 0.1);
+    --ease-out: all 0.3s ease-out;
 }
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+body[data-theme="light"] {
+    --bg-color: #f0f2f5;
+    --text-color: #333;
+    --title-color: #1a73e8;
+    --panel-bg: rgba(255, 255, 255, 0.85);
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --icon-color: #5f6368;
+    --icon-active-bg: #1a73e8;
 }
+
+body[data-theme="dark"] {
+    --bg-color: #202124;
+    --text-color: #e8eaed;
+    --title-color: #8ab4f8;
+    --panel-bg: rgba(40, 42, 48, 0.85);
+    --shadow-color: rgba(0, 0, 0, 0.25);
+    --icon-color: #bdc1c6;
+    --icon-active-bg: #8ab4f8;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
     font-family: 'Poppins', sans-serif;
-    background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+    background-color: var(--bg-color);
     color: var(--text-color);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
     height: 100vh;
     overflow: hidden;
-    padding: 20px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.top-bar {
+    position: absolute;
+    top: 20px;
+    width: 90vw;
+    max-width: 960px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
 }
 
 .main-title {
-    font-size: 2.5rem;
-    font-weight: 600;
-    color: var(--primary-color);
-    position: absolute;
-    top: 30px;
-    z-index: 10;
-    animation: fadeInDown 0.8s ease-out;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--title-color);
 }
 
 .camera-wrapper {
@@ -47,83 +62,68 @@ body {
     border-radius: 20px;
     overflow: hidden;
     background-color: #000;
-    border: 3px solid white;
     box-shadow: 0 10px 30px var(--shadow-color);
-    animation: zoomIn 0.8s ease-out;
 }
 
 video, canvas {
-    position: absolute;
-    top: 50%; left: 50%;
+    position: absolute; top: 0; left: 0;
     width: 100%; height: 100%;
     object-fit: cover;
-    transform: translate(-50%, -50%) scale(1) scaleX(-1);
-    transition: transform 0.3s ease;
+    transform: scaleX(-1);
 }
 
 .controls-bar {
     position: fixed;
-    bottom: 30px;
+    bottom: 25px;
     display: flex; align-items: center;
-    gap: 12px;
+    gap: 15px;
     background-color: var(--panel-bg);
     backdrop-filter: blur(10px);
-    padding: 10px;
+    padding: 12px;
     border-radius: 50px;
     box-shadow: 0 5px 20px var(--shadow-color);
-    animation: fadeInUp 0.8s ease-out;
 }
 
-.controls-bar button {
-    background-color: white;
+.icon-btn {
+    background-color: transparent;
     border: none;
-    color: var(--primary-color);
+    color: var(--icon-color);
     width: 50px; height: 50px;
     border-radius: 50%;
     cursor: pointer;
     display: flex; justify-content: center; align-items: center;
-    box-shadow: 0 3px 10px var(--shadow-color);
-    transition: all 0.3s ease;
+    transition: var(--ease-out);
 }
 
-.controls-bar button:disabled {
-    background-color: #e0e0e0;
+.icon-btn:disabled {
+    color: #999;
     cursor: not-allowed;
-    color: #9e9e9e;
 }
 
-.controls-bar button:not(:disabled):hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 15px var(--shadow-color);
+.icon-btn:not(:disabled):hover {
+    background-color: rgba(0,0,0,0.1);
 }
 
-.controls-bar button.active {
-    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+.icon-btn.active {
+    background-color: var(--icon-active-bg);
     color: white;
 }
 
-.control-group {
-    display: flex; gap: 5px;
-    background: #f0f0f0;
-    padding: 5px;
-    border-radius: 30px;
-}
-
-.zoom-controls button {
-    width: 50px; height: 40px;
-    border-radius: 20px;
-    font-size: 0.9rem; font-weight: 600;
-    background: transparent;
-    box-shadow: none;
-    color: #777;
-}
-
-.zoom-controls button.active {
-    background: var(--primary-color);
+.status-overlay {
+    position: absolute;
+    top: 15px; left: 15px;
+    background-color: rgba(0,0,0,0.5);
     color: white;
+    padding: 10px 20px;
+    border-radius: 12px;
+    text-align: center;
+    z-index: 5;
+    transition: var(--ease-out);
+    transform: scaleX(-1); /* To mirror text correctly */
 }
+.status-overlay h2 { font-size: 1.2rem; font-weight: 600; }
+.score-container { font-size: 1rem; margin-top: 5px; }
 
-/* Loader Styles */
 .loader {
     position: absolute; inset: 0;
     background: rgba(0,0,0,0.7);
@@ -139,36 +139,13 @@ video, canvas {
     animation: spin 1s linear infinite;
     margin-bottom: 15px;
 }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-/* Modal Styles */
-.modal {
-    display: none; position: fixed; z-index: 100;
-    left: 0; top: 0; width: 100%; height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(5px);
-    animation: fadeIn 0.3s ease;
-}
-.modal-content {
-    background-color: #fff;
-    margin: 10% auto; padding: 30px 40px;
-    border-radius: 15px; width: 90%;
-    max-width: 600px; max-height: 80vh;
-    overflow-y: auto; position: relative;
-    animation: slideUp 0.4s ease-out;
-}
-.close-btn {
-    color: #aaa; position: absolute; top: 15px; right: 20px;
-    font-size: 28px; font-weight: bold; cursor: pointer;
-}
-.modal-content h2 { color: var(--primary-color); margin-bottom: 15px; }
-.modal-content h3 { margin-top: 20px; margin-bottom: 10px; color: #333; }
+.modal { display: none; /* Other modal styles from previous steps are unchanged */ }
+.modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); }
+.modal-content { background-color: var(--panel-bg); color: var(--text-color); margin: 10% auto; padding: 30px 40px; border-radius: 15px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; position: relative; }
+.close-btn { color: #aaa; position: absolute; top: 15px; right: 20px; font-size: 28px; font-weight: bold; cursor: pointer; }
+.modal-content h2 { color: var(--title-color); margin-bottom: 15px; }
+.modal-content h3 { margin-top: 20px; margin-bottom: 10px; }
 .modal-content p, .modal-content li { line-height: 1.6; }
 .modal-content ul, .modal-content ol { padding-left: 20px; }
-
-/* Animations */
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes zoomIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
-@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }

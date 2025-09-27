@@ -1,46 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>⚡ Futuristic Pose Tracker</title>
-  <link rel="stylesheet" href="styles.css" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>⚡ Futuristic Pose Tracker</title>
+    <link rel="stylesheet" href="style.css" />
 
-  <!-- TensorFlow.js & PoseNet -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.20.0/dist/tf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/posenet"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.20.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/posenet"></script>
 </head>
 <body>
-  <div class="container">
-    <h1 class="title">⚡ Futuristic Pose Tracker</h1>
+    <h1 class="main-title">POSE TRACKER</h1>
 
-    <!-- Camera & Canvas -->
     <div class="camera-wrapper">
-      <video id="video" autoplay playsinline></video>
-      <canvas id="canvas"></canvas>
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="canvas"></canvas>
     </div>
 
-    <!-- Controls -->
-    <div class="controls">
-      <button id="startBtn">Start</button>
-      <button id="stopBtn" disabled>Stop</button>
-      <select id="zoomSelect">
-        <option value="0.5">0.5x</option>
-        <option value="1" selected>1x</option>
-        <option value="2">2x</option>
-      </select>
+    <div class="controls-bar">
+        <button id="startStopBtn" title="Start/Stop Camera">▶</button>
+        <div class="control-group zoom-controls">
+            <button class="zoom-btn" data-zoom="0.5" title="Zoom 0.5x">0.5x</button>
+            <button class="zoom-btn active" data-zoom="1" title="Zoom 1x">1x</button>
+            <button class="zoom-btn" data-zoom="2" title="Zoom 2x">2x</button>
+        </div>
+        <button id="skeletonToggleBtn" class="active" title="Toggle Skeleton">⚡</button>
+        <button id="infoBtn" title="About">ℹ</button>
     </div>
 
-    <!-- Status -->
-    <div class="status">
-      <p><strong>Posture:</strong> <span id="statusText">—</span></p>
-      <p><strong>Angle:</strong> <span id="angleText">—</span></p>
-      <p><strong>FPS:</strong> <span id="fpsText">—</span></p>
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>About Pose Tracker</h2>
+            <p>
+                This futuristic pose detection app uses <strong>TensorFlow.js</strong> and the <strong>PoseNet</strong> model
+                to track your body posture in real-time.
+            </p>
+            <p><strong>Features:</strong></p>
+            <ul>
+                <li>Real-time skeleton tracking.</li>
+                <li>Dynamic camera zoom controls.</li>
+                <li>Futuristic UI with a dark theme and neon accents.</li>
+            </ul>
+        </div>
     </div>
 
-    <div class="advice" id="advice">Advice will appear here.</div>
-  </div>
-
-  <script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>

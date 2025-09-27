@@ -1,57 +1,67 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SpineGuard — Posture Monitor (Web)</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SpineGuard — Posture Recognition</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
 </head>
-<body class="light">
+<body>
   <header>
-    <h1>SpineGuard — Posture Recognition / Monitor</h1>
+    <h1>🌀 SpineGuard</h1>
     <div class="controls">
       <label class="toggle">
-        <input id="themeToggle" type="checkbox" />
+        <input type="checkbox" id="themeToggle" />
         <span class="slider"></span>
       </label>
       <span id="themeLabel">Light</span>
-      <button id="startBtn">Start</button>
-      <button id="stopBtn" disabled>Stop</button>
+      <select id="zoomSelect">
+        <option value="1.0">1.0x</option>
+        <option value="0.5">0.5x</option>
+        <option value="2.0">2.0x</option>
+      </select>
+      <button id="startBtn">▶ Start</button>
+      <button id="stopBtn" disabled>⏹ Stop</button>
     </div>
   </header>
 
   <main>
-    <div class="video-wrap" id="videoWrap">
-      <video id="video" autoplay playsinline></video>
+    <div class="video-wrap">
+      <video id="video" autoplay muted playsinline></video>
       <canvas id="overlay"></canvas>
     </div>
 
-    <aside class="panel">
+    <div class="panel">
+      <h2>Status</h2>
       <div class="status">
         <div><strong>Posture:</strong> <span id="statusText">—</span></div>
         <div><strong>Angle:</strong> <span id="angleText">—</span></div>
         <div><strong>FPS:</strong> <span id="fpsText">—</span></div>
       </div>
       <div class="advice" id="advice">Advice will appear here.</div>
-      <details>
-        <summary>Advanced Tracking Options</summary>
-        <label>Trail length: <input id="trailLen" type="range" min="1" max="40" value="12"/></label>
-        <label>Line thickness: <input id="lineWidth" type="range" min="1" max="8" value="3"/></label>
-        <label>Glow strength: <input id="glow" type="range" min="0" max="40" value="12"/></label>
-        <label>Zoom: <input id="zoom" type="range" min="1" max="3" step="0.1" value="1"/></label>
-      </details>
-    </aside>
+      <div id="timer">🕒 Session: 0m 0s</div>
+      <div id="breakReminder">💡 Reminder: Stay active!</div>
+    </div>
   </main>
 
-  <footer>
-    <p>Enable GitHub Pages to view this live.</p>
-  </footer>
+  <section id="blog">
+    <h2>📖 Importance of Spine Health</h2>
+    <p>Maintaining good posture prevents back pain, boosts energy, and improves focus. Simple tips: keep your screen at eye level, take breaks every 30 minutes, and stretch regularly.</p>
+  </section>
 
-  <!-- MediaPipe JS libs -->
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/pose.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js"></script>
+  <section id="qna">
+    <h2>💬 Community Q&A</h2>
+    <form id="qnaForm">
+      <input type="text" id="qnaInput" placeholder="Share your tip or question..." required />
+      <button type="submit">Post</button>
+    </form>
+    <ul id="qnaList"></ul>
+  </section>
 
-  <!-- Your script -->
-  <script type="module" src="script.js"></script>
+  <footer>© 2025 SpineGuard | Designed with ⚡ Futuristic Care</footer>
+
+  <script src="script.js"></script>
 </body>
 </html>

@@ -3,45 +3,72 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>⚡ Futuristic Pose Tracker</title>
+    <title>Posture Pro: AI Spine Analysis</title>
     <link rel="stylesheet" href="styles.css" />
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.20.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/posenet"></script>
 </head>
 <body>
-    <h1 class="main-title">POSE TRACKER</h1>
+    <h1 class="main-title">Posture Pro</h1>
 
     <div class="camera-wrapper">
         <video id="video" autoplay playsinline muted></video>
         <canvas id="canvas"></canvas>
+        <div id="loader" class="loader">
+            <div class="spinner"></div>
+            <p>Initializing AI Model...</p>
+        </div>
     </div>
 
     <div class="controls-bar">
-        <button id="startStopBtn" title="Start/Stop Camera">▶</button>
+        <button id="startStopBtn" title="Start Camera" disabled>
+            <svg id="startStopIcon" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                <path d="M8 5v14l11-7z"></path> </svg>
+        </button>
+
         <div class="control-group zoom-controls">
             <button class="zoom-btn" data-zoom="0.5" title="Zoom 0.5x">0.5x</button>
             <button class="zoom-btn active" data-zoom="1" title="Zoom 1x">1x</button>
             <button class="zoom-btn" data-zoom="2" title="Zoom 2x">2x</button>
         </div>
-        <button id="skeletonToggleBtn" class="active" title="Toggle Skeleton">⚡</button>
-        <button id="infoBtn" title="About">ℹ</button>
+
+        <button id="skeletonToggleBtn" class="active" title="Toggle Skeleton">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 5v14M5 12h14"></path><circle cx="12" cy="12" r="3"></circle>
+                <circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle>
+                <circle cx="5" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle>
+            </svg>
+        </button>
+
+        <button id="infoBtn" title="Posture Health Tips">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                <path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"></path>
+            </svg>
+        </button>
     </div>
 
     <div id="infoModal" class="modal">
         <div class="modal-content">
             <span class="close-btn">&times;</span>
-            <h2>About Pose Tracker</h2>
-            <p>
-                This futuristic pose detection app uses <strong>TensorFlow.js</strong> and the <strong>PoseNet</strong> model
-                to track your body posture in real-time.
-            </p>
-            <p><strong>Features:</strong></p>
+            <h2>The Importance of Spine Health</h2>
+            <p class="intro">Your spine is your body's central support structure. Maintaining correct posture is not just about looking confident—it's critical for long-term health, energy levels, and preventing chronic pain.</p>
+            
+            <h3>Common Problems from Poor Posture</h3>
             <ul>
-                <li>Real-time skeleton tracking.</li>
-                <li>Dynamic camera zoom controls.</li>
-                <li>Futuristic UI with a dark theme and neon accents.</li>
+                <li><strong>Chronic Back, Neck, and Shoulder Pain:</strong> Constant strain on muscles and ligaments leads to inflammation and pain. (Source: Journal of Physical Therapy Science)</li>
+                <li><strong>Headaches and Jaw Pain:</strong> Forward head posture strains neck muscles, often triggering tension headaches and temporomandibular joint (TMJ) pain.</li>
+                <li><strong>Reduced Lung Capacity:</strong> Slouching compresses your chest cavity, making it harder for your lungs to expand fully, which can reduce oxygen intake.</li>
+                <li><strong>Poor Circulation:</strong> Compressing certain parts of the body for extended periods can impede blood flow.</li>
             </ul>
+
+            <h3>Actionable Tips for Better Posture</h3>
+            <ol>
+                <li><strong>The 90-90-90 Rule for Desks:</strong> Adjust your chair so your elbows, hips, and knees are at roughly 90-degree angles. Your computer screen should be at eye level. This minimizes musculoskeletal strain.</li>
+                <li><strong>The 30-Minute Movement Rule:</strong> For every 30 minutes of sitting, stand up and move for at least 2-3 minutes. Scientific evidence shows that breaking up sedentary time is crucial for metabolic and spinal health.</li>
+                <li><strong>Strengthen Your Core:</strong> Your core muscles (abdominals, back, and pelvis) are the primary support system for your spine. Exercises like planks and bird-dog are scientifically proven to improve spinal stability.</li>
+                <li><strong>Practice Mindful Awareness:</strong> Actively think about your posture. Gently pull your shoulder blades back and down, and imagine a string pulling the crown of your head towards the ceiling. This helps retrain your body's sense of "neutral" position (proprioception).</li>
+            </ol>
         </div>
     </div>
 

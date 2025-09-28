@@ -91,49 +91,50 @@ function setupPose(){
 setupPose();
 
 // Camera controls
-async function start(){
-  if(running) return;
+async function start() {
+  if (running) return;
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video:true, audio:false });
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
     video.srcObject = stream;
-    await video.play();
-    resizeCanvas();
 
-    // Create a fresh Camera instance each time we start
-    camera = new Camera(video, {
-      onFrame: async () => {
-        await pose.send({image: video});
-      }
-    });
-    camera.start();
+    video.onloadedmetadata = async () => {
+      await video.play();
+      resizeCanvas();
 
-    running = true;
-    startBtn.disabled = true;
-    stopBtn.disabled = false;
+      setupPose(); // 👈 recreate new Pose instance here
+      camera = new Camera(video, {
+        onFrame: async () => {
+          if (pose) await pose.send({ image: video });
+        }
+      });
+      camera.start();
+
+      running = true;
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+    };
   } catch (err) {
     alert("Cannot access webcam: " + err.message);
   }
-}
-
-function stop(){
-  if(!running) return;
-
-  // Stop MediaPipe camera if it exists
-  if (camera) {
-    camera.stop();
-    camera = null;  // reset reference
-  }
-
-  // Stop all video tracks
+} 
+ function stop() {
+  if (!running) return;
   const tracks = video.srcObject?.getTracks() || [];
   tracks.forEach(t => t.stop());
   video.srcObject = null;
-
   running = false;
   startBtn.disabled = false;
   stopBtn.disabled = true;
-
   clearCanvas();
+
+  if (camera) {
+    camera.stop();
+    camera = null;
+  }
+  if (pose) {
+    pose.close();   // 👈 properly dispose mediapipe graph
+    pose = null;
+  }
 }
 startBtn.addEventListener('click', start);
 stopBtn.addEventListener('click', stop);

@@ -1,412 +1,203 @@
-// script.js (module)
-// Uses MediaPipe Pose and Camera utilities via module imports
+// ✅ SpineGuard — Posture Recognition JS
+const video = document.getElementById('video');
+const canvas = document.getElementById('overlay');
+const ctx = canvas.getContext('2d');
 
-import { Pose } from "https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/pose.js";
-import { Camera } from "https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3/camera_utils.js";
+const statusText = document.getElementById('statusText');
+const angleText = document.getElementById('angleText');
+const fpsText = document.getElementById('fpsText');
+const adviceEl = document.getElementById('advice');
+const startBtn = document.getElementById('startBtn');
+const stopBtn = document.getElementById('stopBtn');
 
-/* ---------------- DOM refs ---------------- */
-const video = document.getElementById("video");
-const overlay = document.getElementById("overlay");
-const videoWrap = document.getElementById("videoWrap");
+const trailLenInput = document.getElementById('trailLen');
+const lineWidthInput = document.getElementById('lineWidth');
+const glowInput = document.getElementById('glow');
+const zoomLevel = document.getElementById('zoomLevel');
 
-const startBtn = document.getElementById("startBtn");
-const stopBtn = document.getElementById("stopBtn");
+let running = false;
+let lastTime = performance.now();
+let trail = [];
 
-const fpsText = document.getElementById("fpsText");
-const fpsTextPanel = document.getElementById("fpsTextPanel");
-const angleText = document.getElementById("angleText");
-const angleTextPanel = document.getElementById("angleTextPanel");
-const statusText = document.getElementById("statusText");
-const statusTextPanel = document.getElementById("statusTextPanel");
-const adviceBox = document.getElementById("advice");
+const themeToggle = document.getElementById('themeToggle');
+const themeLabel = document.getElementById('themeLabel');
+themeToggle.addEventListener('change', e=>{
+  document.body.classList.toggle('dark', e.target.checked);
+  themeLabel.textContent = e.target.checked ? 'Dark' : 'Light';
+});
 
-const zoomInput = document.getElementById("zoom");
-const zoomLabel = document.getElementById("zoomLabel");
-const trailLenInput = document.getElementById("trailLen");
-const lineWidthInput = document.getElementById("lineWidth");
-
-const trailLenPanel = document.getElementById("trailLenPanel");
-const lineWidthPanel = document.getElementById("lineWidthPanel");
-
-const themeToggle = document.getElementById("themeToggle");
-const themeLabel = document.getElementById("themeLabel");
-
-/* ---------------- state ---------------- */
-let pose = null;     // MediaPipe Pose instance
-let camera = null;   // MediaPipe Camera instance
-let ctx = overlay.getContext("2d");
-
-let trailLength = parseInt(trailLenInput?.value || 12, 10);
-let lineWidth = parseInt(lineWidthInput?.value || 3, 10);
-let trails = {}; // per-landmark trail points
-
-let zoom = parseFloat(zoomInput?.value || 1);
-let tx = 0, ty = 0;
-let isPanning = false;
-let panStart = { x:0, y:0, tx:0, ty:0 };
-
-let lastFrameTime = performance.now();
-let fps = 0;
-
-/* ---------------- helpers ---------------- */
-function resizeCanvasToVideo() {
-  if (!video.videoWidth || !video.videoHeight) return;
-  // set canvas pixel size to match video resolution
-  const dpr = window.devicePixelRatio || 1;
-  overlay.width = Math.round(video.videoWidth * dpr);
-  overlay.height = Math.round(video.videoHeight * dpr);
-  overlay.style.width = video.videoWidth + "px";
-  overlay.style.height = video.videoHeight + "px";
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+// ✅ Canvas resize
+function resizeCanvas() {
+  canvas.width = video.videoWidth || 640;
+  canvas.height = video.videoHeight || 480;
 }
 
-function lmToPoint(landmark) {
-  return { x: landmark.x * video.videoWidth, y: landmark.y * video.videoHeight };
+// ✅ Posture logic
+const GOOD_THRESHOLD = 8;
+const MODERATE_THRESHOLD = 15;
+function midpoint(a,b){ return {x:(a.x+b.x)/2, y:(a.y+b.y)/2}; }
+function computeAngle(a,b){
+  const dx = b.x - a.x, dy = b.y - a.y;
+  return Math.atan2(dx,dy)*180/Math.PI;
+}
+function classifyPosture(angle){
+  const mag = Math.abs(angle);
+  if(mag <= GOOD_THRESHOLD) return 'Excellent';
+  if(mag <= MODERATE_THRESHOLD) return 'Needs Adjustment';
+  return 'Fix Now';
+}
+function ergonomicAdvice(status){
+  if(status==='Excellent') return 'Keep up the great posture!';
+  if(status==='Needs Adjustment') return 'Straighten your back slightly.';
+  return 'Fix posture immediately!';
 }
 
-/* ---------------- skeleton pairs ---------------- */
-/* Indices follow MediaPipe Pose: using common pairs plus extras */
-const SKELETON_PAIRS = [
-  [11,12], [11,23], [12,24], [23,24],
-  [11,13], [13,15], [12,14], [14,16],
-  [23,25], [24,26], [25,27], [26,28],
-  /* extras for 'futuristic' look */
-  [15,19], [16,20], // elbows -> fingers-ish
-  [15,17], [16,18], // palms
-  [11,16], [12,15], // cross-arm accents
-  [11,14], [12,13]  // shoulder/elbow cross links
-];
-
-/* ---------------- drawing ---------------- */
-function drawSkeletonAndTrails(landmarks) {
-  if (!landmarks || !landmarks.length) {
-    ctx.clearRect(0,0,overlay.width, overlay.height);
-    return;
-  }
-  resizeCanvasToVideo();
-
-  // scale to natural pixel coords (lmToPoint used video.videoWidth/Height)
-  // Update trails
-  for (let i = 0; i < landmarks.length; i++) {
-    const p = lmToPoint(landmarks[i]);
-    if (!trails[i]) trails[i] = [];
-    trails[i].push(p);
-    while (trails[i].length > trailLength) trails[i].shift();
-  }
-
-  // clear
-  ctx.clearRect(0,0,overlay.width, overlay.height);
-
-  // Draw trails (faded)
-  ctx.lineCap = 'round';
-  for (let i = 0; i < landmarks.length; i++) {
-    const t = trails[i];
-    if (!t || t.length < 2) continue;
+// ✅ Futuristic drawing
+function drawFuturisticLine(points, colorBase, width, glow){
+  if(points.length<2) return;
+  for(let layer=0;layer<3;layer++){
     ctx.beginPath();
-    for (let j = 0; j < t.length; j++) {
-      const alpha = (j+1) / t.length * 0.6;
-      ctx.globalAlpha = alpha * 0.9;
-      const pt = t[j];
-      if (j === 0) ctx.moveTo(pt.x, pt.y);
-      else ctx.lineTo(pt.x, pt.y);
-    }
-    ctx.lineWidth = Math.max(1, lineWidth * 0.6);
-    ctx.strokeStyle = 'rgba(11,95,170,0.55)';
-    ctx.shadowBlur = 6;
-    ctx.shadowColor = 'rgba(11,95,170,0.4)';
+    ctx.lineWidth = width*(1+(3-layer)*0.15);
+    ctx.lineCap='round';
+    ctx.moveTo(points[0].x, points[0].y);
+    for(let i=1;i<points.length;i++) ctx.lineTo(points[i].x, points[i].y);
+    const alpha=0.15+layer*0.15;
+    ctx.strokeStyle=`rgba(${colorBase.r},${colorBase.g},${colorBase.b},${alpha})`;
+    ctx.shadowColor=`rgba(${colorBase.r},${colorBase.g},${colorBase.b},${Math.min(0.9,glow/40)})`;
+    ctx.shadowBlur=glow*(0.7-layer*0.2);
     ctx.stroke();
-    ctx.shadowBlur = 0;
-    ctx.globalAlpha = 1.0;
   }
-
-  // Draw skeleton lines (futuristic glow)
-  ctx.lineWidth = Math.max(1, lineWidth);
-  ctx.strokeStyle = 'rgba(111,184,255,0.95)';
   ctx.beginPath();
-  for (const pair of SKELETON_PAIRS) {
-    const a = lmToPoint(landmarks[pair[0]]);
-    const b = lmToPoint(landmarks[pair[1]]);
-    ctx.moveTo(a.x, a.y);
-    ctx.lineTo(b.x, b.y);
-  }
-  ctx.shadowBlur = 18;
-  ctx.shadowColor = 'rgba(111,184,255,0.45)';
+  ctx.lineWidth=width;
+  ctx.moveTo(points[0].x, points[0].y);
+  for(let i=1;i<points.length;i++) ctx.lineTo(points[i].x, points[i].y);
+  ctx.shadowBlur=0;
+  ctx.strokeStyle='rgba(255,255,255,0.9)';
   ctx.stroke();
-  ctx.shadowBlur = 0;
-
-  // Draw joints
-  for (let i = 0; i < landmarks.length; i++) {
-    const p = lmToPoint(landmarks[i]);
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, Math.max(1, lineWidth/1.5), 0, Math.PI*2);
-    ctx.fillStyle = 'rgba(255,255,255,0.95)';
-    ctx.fill();
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = 'rgba(11,15,23,0.12)';
-    ctx.stroke();
-  }
 }
 
-/* ---------------- posture math ---------------- */
-function calcShoulderTilt(landmarks) {
-  const l = landmarks[11];
-  const r = landmarks[12];
-  if (!l || !r) return null;
-  const p1 = lmToPoint(l);
-  const p2 = lmToPoint(r);
-  const dx = p2.x - p1.x;
-  const dy = p2.y - p1.y;
-  const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-  return angle;
-}
-
-function interpretAngle(angle) {
-  if (angle === null) return { label: '—', advice: 'No person detected' };
-  const a = Math.abs(angle);
-  if (a <= 5) {
-    return { label: 'Proper', advice: 'Good posture — keep it up.' };
-  } else if (a <= 15) {
-    return { label: 'Fair', advice: 'Slight tilt — square your shoulders.' };
-  } else {
-    return { label: 'Needs Attention', advice: 'Significant tilt — sit/stand up straight.' };
-  }
-}
-
-/* ---------------- MediaPipe setup ---------------- */
-function initPoseIfNeeded() {
-  if (pose) return;
-  pose = new Pose({
-    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/${file}`
-  });
+// ✅ Mediapipe Pose
+let camera, pose;
+function setupPose(){
+  pose = new Pose({locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/${f}`});
   pose.setOptions({
-    modelComplexity: 1,
-    smoothLandmarks: true,
-    enableSegmentation: false,
-    smoothSegmentation: false,
-    minDetectionConfidence: 0.5,
-    minTrackingConfidence: 0.5
+    modelComplexity:1,
+    smoothLandmarks:true,
+    minDetectionConfidence:0.5,
+    minTrackingConfidence:0.5
   });
   pose.onResults(onResults);
 }
+setupPose();
 
-/* ---------------- start / stop camera ---------------- */
-async function startCamera() {
-  if (camera) return; // already running
-  initPoseIfNeeded();
-
-  try {
-    camera = new Camera(video, {
-      onFrame: async () => {
-        await pose.send({ image: video });
-      },
-      width: 1280,
-      height: 720
+// ✅ Camera controls
+async function start(){
+  if(running) return;
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({
+      video:{zoom:zoomLevel.value}, audio:false
     });
+    video.srcObject=stream;
+    await video.play();
+    resizeCanvas();
+    camera=new Camera(video,{onFrame:async()=>{await pose.send({image:video});}});
     camera.start();
-    startBtn.disabled = true;
-    stopBtn.disabled = false;
-    adviceBox.textContent = 'Starting camera... allow camera permission in the browser.';
-  } catch (err) {
-    console.error('Camera start error', err);
-    adviceBox.textContent = 'Failed to start camera: ' + (err.message || err);
-  }
+    running=true;
+    startBtn.disabled=true;
+    stopBtn.disabled=false;
+  }catch(err){ alert("Cannot access webcam: "+err.message); }
+}
+function stop(){
+  if(!running) return;
+  const tracks=video.srcObject?.getTracks()||[];
+  tracks.forEach(t=>t.stop());
+  video.srcObject=null;
+  running=false;
+  startBtn.disabled=false;
+  stopBtn.disabled=true;
+  clearCanvas();
+}
+startBtn.addEventListener('click', start);
+stopBtn.addEventListener('click', stop);
+
+// ✅ Clear canvas
+function clearCanvas(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  statusText.textContent='—';
+  angleText.textContent='—';
+  fpsText.textContent='—';
+  adviceEl.textContent='Advice will appear here.';
+  trail=[];
 }
 
-function stopCamera() {
-  if (camera) {
-    try {
-      camera.stop();
-    } catch (e) { /* ignore */ }
-    camera = null;
-  }
-  // Also stop any tracks if present
-  try {
-    if (video && video.srcObject) {
-      const st = video.srcObject;
-      if (st.getTracks) st.getTracks().forEach(t => t.stop());
-      video.srcObject = null;
-    }
-  } catch (e) { /* ignore */ }
+// ✅ Main posture results
+function onResults(results){
+  const now=performance.now();
+  const dt=(now-lastTime)/1000;
+  const fps=Math.round(1/dt);
+  lastTime=now;
+  fpsText.textContent=fps;
 
-  // clear UI and trails
-  ctx.clearRect(0,0,overlay.width, overlay.height);
-  trails = {};
-  angleText.textContent = '—';
-  angleTextPanel.textContent = '—';
-  statusText.textContent = '—';
-  statusTextPanel.textContent = '—';
-  fpsText.textContent = '—';
-  fpsTextPanel.textContent = '—';
-  adviceBox.textContent = 'Camera stopped.';
-  startBtn.disabled = false;
-  stopBtn.disabled = true;
-}
+  resizeCanvas();
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
-/* ---------------- results handler ---------------- */
-function onResults(results) {
-  if (!results) return;
-
-  // update canvas size if necessary
-  resizeCanvasToVideo();
-
-  const now = performance.now();
-  fps = 1000 / (now - lastFrameTime);
-  lastFrameTime = now;
-  if (Number.isFinite(fps)) {
-    fpsText.textContent = Math.round(fps);
-    if (fpsTextPanel) fpsTextPanel.textContent = Math.round(fps);
-  }
-
-  if (!results.poseLandmarks) {
-    ctx.clearRect(0,0,overlay.width, overlay.height);
-    adviceBox.textContent = 'No person detected';
+  if(!results.poseLandmarks){
+    ctx.fillStyle='rgba(255,80,80,0.9)';
+    ctx.font='20px Arial';
+    ctx.fillText('No person detected',20,40);
     return;
   }
 
-  drawSkeletonAndTrails(results.poseLandmarks);
+  const lm=results.poseLandmarks;
+  const shoulderMid=midpoint(lm[11],lm[12]);
+  const hipMid=midpoint(lm[23],lm[24]);
+  const angle=computeAngle(shoulderMid,hipMid);
+  const status=classifyPosture(angle);
+  const advice=ergonomicAdvice(status);
 
-  const angle = calcShoulderTilt(results.poseLandmarks);
-  if (angle !== null) {
-    angleText.textContent = angle.toFixed(2);
-    if (angleTextPanel) angleTextPanel.textContent = angle.toFixed(2);
-    const interp = interpretAngle(angle);
-    statusText.textContent = interp.label;
-    if (statusTextPanel) statusTextPanel.textContent = interp.label;
-    adviceBox.textContent = interp.advice;
+  statusText.textContent=status;
+  angleText.textContent=angle.toFixed(1)+"°";
+  adviceEl.textContent=advice;
+
+  function toPx(p){return {x:p.x*canvas.width,y:p.y*canvas.height};}
+  const sPx=toPx(shoulderMid), hPx=toPx(hipMid);
+
+  const interp=[];
+  for(let i=0;i<=20;i++){
+    const t=i/20;
+    interp.push({x:sPx.x*(1-t)+hPx.x*t, y:sPx.y*(1-t)+hPx.y*t});
   }
+
+  const colors={
+    "Excellent":{r:16,g:185,b:129},
+    "Needs Adjustment":{r:250,g:204,b:21},
+    "Fix Now":{r:239,g:68,b:68}
+  };
+  const colorBase=colors[status];
+  const lineWidth=parseInt(lineWidthInput.value,10);
+  const glow=parseInt(glowInput.value,10);
+
+  drawFuturisticLine(interp,colorBase,lineWidth,glow);
+
+  ctx.beginPath();
+  ctx.fillStyle='white';
+  ctx.arc(sPx.x,sPx.y,6,0,Math.PI*2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(hPx.x,hPx.y,6,0,Math.PI*2);
+  ctx.fill();
 }
 
-/* ---------------- zoom & pan ---------------- */
-function applyTransform() {
-  videoWrap.style.transform = `translate(${tx}px, ${ty}px) scale(${zoom})`;
-}
-function clampPan() {
-  const maxX = Math.max(0, (zoom - 1) * videoWrap.clientWidth / 2);
-  const maxY = Math.max(0, (zoom - 1) * videoWrap.clientHeight / 2);
-  tx = Math.max(-maxX, Math.min(maxX, tx));
-  ty = Math.max(-maxY, Math.min(maxY, ty));
-}
-
-if (zoomInput) {
-  zoomInput.addEventListener('input', (e) => {
-    zoom = parseFloat(e.target.value);
-    zoomLabel.textContent = zoom + 'x';
-    clampPan();
-    applyTransform();
-    updateZoomButtonsByValue(zoom);
-  });
-}
-
-document.querySelectorAll('.zoom-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const z = parseFloat(btn.dataset.zoom);
-    document.querySelectorAll('.zoom-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    zoom = z;
-    if (zoomInput) zoomInput.value = z;
-    zoomLabel.textContent = zoom + 'x';
-    clampPan();
-    applyTransform();
-  });
+// ✅ Q&A Feature
+const qaForm=document.getElementById('qaForm');
+const qaInput=document.getElementById('qaInput');
+const qaList=document.getElementById('qaList');
+qaForm.addEventListener('submit', e=>{
+  e.preventDefault();
+  const text=qaInput.value.trim();
+  if(!text) return;
+  const li=document.createElement('li');
+  li.textContent=text;
+  qaList.appendChild(li);
+  qaInput.value='';
 });
-
-function updateZoomButtonsByValue(val) {
-  document.querySelectorAll('.zoom-btn').forEach(b => {
-    if (Math.abs(parseFloat(b.dataset.zoom) - Math.round(val*10)/10) < 0.001) b.classList.add('active');
-    else b.classList.remove('active');
-  });
-}
-
-videoWrap.addEventListener('pointerdown', (ev) => {
-  if (zoom <= 1) return;
-  isPanning = true;
-  videoWrap.classList.add('dragging');
-  panStart = { x: ev.clientX, y: ev.clientY, tx, ty };
-  try { videoWrap.setPointerCapture(ev.pointerId); } catch {}
-});
-videoWrap.addEventListener('pointermove', (ev) => {
-  if (!isPanning) return;
-  const dx = ev.clientX - panStart.x;
-  const dy = ev.clientY - panStart.y;
-  tx = panStart.tx + dx;
-  ty = panStart.ty + dy;
-  clampPan();
-  applyTransform();
-});
-videoWrap.addEventListener('pointerup', (ev) => {
-  isPanning = false;
-  videoWrap.classList.remove('dragging');
-  try { videoWrap.releasePointerCapture(ev.pointerId); } catch {}
-});
-videoWrap.addEventListener('pointercancel', () => {
-  isPanning = false;
-  videoWrap.classList.remove('dragging');
-});
-
-/* ---------------- panel sync ---------------- */
-if (trailLenInput && trailLenPanel) {
-  trailLenInput.addEventListener('input', () => {
-    trailLength = parseInt(trailLenInput.value, 10);
-    trailLenPanel.value = trailLength;
-  });
-  trailLenPanel.addEventListener('input', () => {
-    trailLength = parseInt(trailLenPanel.value, 10);
-    trailLenInput.value = trailLength;
-  });
-}
-if (lineWidthInput && lineWidthPanel) {
-  lineWidthInput.addEventListener('input', () => {
-    lineWidth = parseInt(lineWidthInput.value, 10);
-    lineWidthPanel.value = lineWidth;
-  });
-  lineWidthPanel.addEventListener('input', () => {
-    lineWidth = parseInt(lineWidthPanel.value, 10);
-    lineWidthInput.value = lineWidth;
-  });
-}
-
-/* ---------------- theme & tabs ---------------- */
-if (themeToggle) {
-  themeToggle.addEventListener('change', (e) => {
-    if (e.target.checked) {
-      document.body.classList.add('dark');
-      if (themeLabel) themeLabel.textContent = 'Dark';
-    } else {
-      document.body.classList.remove('dark');
-      if (themeLabel) themeLabel.textContent = 'Light';
-    }
-  });
-}
-
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    const tab = btn.dataset.tab;
-    document.querySelectorAll('.tab-content').forEach(tc => {
-      tc.classList.toggle('hidden', tc.id !== tab);
-    });
-  });
-});
-
-/* ---------------- start/stop wiring ---------------- */
-startBtn.addEventListener('click', () => {
-  startCamera();
-  adviceBox.textContent = 'Starting camera... allow camera permission in the browser.';
-});
-stopBtn.addEventListener('click', () => {
-  stopCamera();
-});
-
-/* ---------------- video metadata & init ---------------- */
-video.addEventListener('loadedmetadata', () => {
-  resizeCanvasToVideo();
-});
-
-(function initUI() {
-  zoomLabel.textContent = zoom + 'x';
-  if (trailLenPanel) trailLenPanel.value = trailLength;
-  if (lineWidthPanel) lineWidthPanel.value = lineWidth;
-  updateZoomButtonsByValue(zoom);
-  adviceBox.textContent = 'Press Start to begin tracking.';
-})();

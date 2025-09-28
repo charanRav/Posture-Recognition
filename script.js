@@ -1,4 +1,4 @@
-// ✅ SpineGuard — Posture Recognition JS
+// SpineGuard — Posture Recognition JS
 const video = document.getElementById('video');
 const canvas = document.getElementById('overlay');
 const ctx = canvas.getContext('2d');
@@ -26,13 +26,13 @@ themeToggle.addEventListener('change', e=>{
   themeLabel.textContent = e.target.checked ? 'Dark' : 'Light';
 });
 
-// ✅ Canvas resize
+// Canvas resize
 function resizeCanvas() {
   canvas.width = video.videoWidth || 640;
   canvas.height = video.videoHeight || 480;
 }
 
-// ✅ Posture logic
+// Posture logic
 const GOOD_THRESHOLD = 8;
 const MODERATE_THRESHOLD = 15;
 function midpoint(a,b){ return {x:(a.x+b.x)/2, y:(a.y+b.y)/2}; }
@@ -52,7 +52,7 @@ function ergonomicAdvice(status){
   return 'Fix posture immediately!';
 }
 
-// ✅ Futuristic drawing
+// Futuristic drawing
 function drawFuturisticLine(points, colorBase, width, glow){
   if(points.length<2) return;
   for(let layer=0;layer<3;layer++){
@@ -76,7 +76,7 @@ function drawFuturisticLine(points, colorBase, width, glow){
   ctx.stroke();
 }
 
-// ✅ Mediapipe Pose
+// Mediapipe Pose
 let camera, pose;
 function setupPose(){
   pose = new Pose({locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/${f}`});
@@ -90,37 +90,55 @@ function setupPose(){
 }
 setupPose();
 
-// ✅ Camera controls
+// Camera controls
 async function start(){
   if(running) return;
-  try{
-    const stream=await navigator.mediaDevices.getUserMedia({
-      video:{zoom:zoomLevel.value}, audio:false
-    });
-    video.srcObject=stream;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video:true, audio:false });
+    video.srcObject = stream;
     await video.play();
     resizeCanvas();
-    camera=new Camera(video,{onFrame:async()=>{await pose.send({image:video});}});
+
+    // Create a fresh Camera instance each time we start
+    camera = new Camera(video, {
+      onFrame: async () => {
+        await pose.send({image: video});
+      }
+    });
     camera.start();
-    running=true;
-    startBtn.disabled=true;
-    stopBtn.disabled=false;
-  }catch(err){ alert("Cannot access webcam: "+err.message); }
+
+    running = true;
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+  } catch (err) {
+    alert("Cannot access webcam: " + err.message);
+  }
 }
+
 function stop(){
   if(!running) return;
-  const tracks=video.srcObject?.getTracks()||[];
-  tracks.forEach(t=>t.stop());
-  video.srcObject=null;
-  running=false;
-  startBtn.disabled=false;
-  stopBtn.disabled=true;
+
+  // Stop MediaPipe camera if it exists
+  if (camera) {
+    camera.stop();
+    camera = null;  // reset reference
+  }
+
+  // Stop all video tracks
+  const tracks = video.srcObject?.getTracks() || [];
+  tracks.forEach(t => t.stop());
+  video.srcObject = null;
+
+  running = false;
+  startBtn.disabled = false;
+  stopBtn.disabled = true;
+
   clearCanvas();
 }
 startBtn.addEventListener('click', start);
 stopBtn.addEventListener('click', stop);
 
-// ✅ Clear canvas
+// Clear canvas
 function clearCanvas(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   statusText.textContent='—';
@@ -130,7 +148,7 @@ function clearCanvas(){
   trail=[];
 }
 
-// ✅ Main posture results
+// Main posture results
 function onResults(results){
   const now=performance.now();
   const dt=(now-lastTime)/1000;
@@ -188,7 +206,7 @@ function onResults(results){
   ctx.fill();
 }
 
-// ✅ Q&A Feature
+// Q&A Feature
 const qaForm=document.getElementById('qaForm');
 const qaInput=document.getElementById('qaInput');
 const qaList=document.getElementById('qaList');

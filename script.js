@@ -91,6 +91,7 @@ function setupPose(){
 setupPose();
 
 // Camera controls
+// Camera controls
 async function start() {
   if (running) return;
   try {
@@ -101,7 +102,17 @@ async function start() {
       await video.play();
       resizeCanvas();
 
-      setupPose(); // 👈 recreate new Pose instance here
+      // ✅ always recreate Pose instance here
+      pose = new Pose({ locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/${f}` });
+      pose.setOptions({
+        modelComplexity: 1,
+        smoothLandmarks: true,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
+      });
+      pose.onResults(onResults);
+
+      // ✅ always recreate Camera
       camera = new Camera(video, {
         onFrame: async () => {
           if (pose) await pose.send({ image: video });
@@ -116,23 +127,30 @@ async function start() {
   } catch (err) {
     alert("Cannot access webcam: " + err.message);
   }
-} 
- function stop() {
+}
+
+function stop() {
   if (!running) return;
+
+  // stop video tracks
   const tracks = video.srcObject?.getTracks() || [];
   tracks.forEach(t => t.stop());
   video.srcObject = null;
+
   running = false;
   startBtn.disabled = false;
   stopBtn.disabled = true;
   clearCanvas();
 
+  // stop and cleanup camera
   if (camera) {
     camera.stop();
     camera = null;
   }
+
+  // stop and cleanup pose
   if (pose) {
-    pose.close();   // 👈 properly dispose mediapipe graph
+    pose.close();
     pose = null;
   }
 }

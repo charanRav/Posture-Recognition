@@ -88,11 +88,12 @@ function setupPose(){
   });
   pose.onResults(onResults);
 }
-setupPose();
 
 // Camera controls
-// Camera controls
-async function start() {
+lse;
+    };
+  } catch (err) {
+    async function start() {
   if (running) return;
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
@@ -102,15 +103,8 @@ async function start() {
       await video.play();
       resizeCanvas();
 
-      // ✅ always recreate Pose instance here
-      pose = new Pose({ locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/${f}` });
-      pose.setOptions({
-        modelComplexity: 1,
-        smoothLandmarks: true,
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5
-      });
-      pose.onResults(onResults);
+      // ✅ setup a NEW pose instance each time
+      setupPose();
 
       // ✅ always recreate Camera
       camera = new Camera(video, {
@@ -128,7 +122,6 @@ async function start() {
     alert("Cannot access webcam: " + err.message);
   }
 }
-
 function stop() {
   if (!running) return;
 
